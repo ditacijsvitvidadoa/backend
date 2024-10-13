@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/ditacijsvitvidadoa/backend/internal/app"
+	cash2 "github.com/ditacijsvitvidadoa/backend/internal/cash"
 	"github.com/ditacijsvitvidadoa/backend/internal/mongo_conn"
 	"log"
 	"net/http"
@@ -17,13 +18,19 @@ func main() {
 	}
 	fmt.Println("port -> ", port)
 
+	cash, err := cash2.RedisConnection()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer cash.Close()
+
 	client, err := mongo_conn.MongoConnection()
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer client.Disconnect(context.Background())
 
-	a := app.NewApp(client)
+	a := app.NewApp(client, cash)
 	router := a.GetRouter()
 
 	fmt.Println("Listening on port:", port)

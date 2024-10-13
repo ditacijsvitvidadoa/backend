@@ -7,11 +7,13 @@ services:
     depends_on:
       mongo:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     hostname: products
     env_file:
       - ./.env
     ports:
-      - "8000:8000"
+      - "$PORT:$PORT"
 
   mongo:
     image: mongo:latest
@@ -19,7 +21,7 @@ services:
     restart: unless-stopped
     tty: true
     ports:
-      - "27017:27017"
+      - "$MONGODB_PORT:$MONGODB_PORT"
     volumes:
       - mongo_data:/data/db
     env_file:
@@ -30,5 +32,20 @@ services:
       timeout: 5s
       retries: 10
 
+  redis:
+    image: redis:latest
+    container_name: redis_db
+    restart: unless-stopped
+    ports:
+      - "$REDISDB_PORT:$REDISDB_PORT"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
 volumes:
   mongo_data:
+  redis_data:

@@ -24,7 +24,6 @@ func MongoConnection() (*mongo.Client, error) {
 		return nil, err
 	}
 
-	// Проверяем подключение
 	if err = client.Ping(ctx, nil); err != nil {
 		return nil, err
 	}

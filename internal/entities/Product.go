@@ -12,4 +12,7 @@ type Product struct {
 	Material    string `bson:"material" json:"material"`
 	Brand       string `bson:"brand" json:"brand"`
 	Age         string `bson:"age" json:"age"`
+	InCart      bool   `json:"in_cart"`
+	IsFavourite bool   `json:"is_favourite"`
+	Count       int    `bson:"count" json:"count"`
 }
