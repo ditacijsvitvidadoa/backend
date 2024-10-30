@@ -1,15 +1,27 @@
 package validators
 
 import (
+	"fmt"
+	"net/http"
 	"strconv"
 )
 
 var (
 	allowedCategories = []string{"ForBoys", "ForGirls", "ForInfants", "SoftToys", "BuildingSets", "Bookstore", "Creativity", "ForSchool", "Footswear", "ForSport", "Accessories"}
 	allowedAges       = []string{"A", "B", "C", "D"}
-	allowedBrands     = []string{"brand1", "brand2", "brand3"}
-	allowedMaterials  = []string{"plastic", "wood", "metal"}
-	allowedTypes      = []string{"type1", "type2", "type3"}
+	allowedBrands     = []string{"LEGO", "Mattel", "Hasbro", "Fisher-Price"}
+	allowedMaterials  = []string{
+		"plastic", "wood", "metal", "fabric",
+		"rubber", "foam", "silicone",
+		"cardboard", "paper", "plush",
+		"ceramic", "glass",
+	}
+	allowedTypes = []string{
+		"actionFigures", "dolls", "plushToys",
+		"buildingSets", "educationalToys", "vehicles",
+		"puzzles", "outdoorToys", "artsAndCrafts",
+		"electronicToys", "musicalToys", "boardGames",
+	}
 )
 
 func IsValidCategory(category string) bool {
@@ -63,4 +75,17 @@ func IsValidDiscount(discount string) (bool, error) {
 
 func IsValidPriceRange(from, to int) bool {
 	return from >= 0 && to >= from
+}
+
+func ExtractProductID(r *http.Request) (int, error) {
+	productIDStr := r.PathValue("id")
+	if productIDStr == "" {
+		return 0, fmt.Errorf("Product ID is empty")
+	}
+
+	productID, err := strconv.Atoi(productIDStr)
+	if err != nil {
+		return 0, fmt.Errorf("invalid product id: %s", productIDStr)
+	}
+	return productID, nil
 }

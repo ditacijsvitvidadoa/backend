@@ -21,17 +21,8 @@ func UpdateUserCart(client *mongo.Client, userID primitive.ObjectID, productID i
 	return storage.GeneralUpdate[entities.User](client, storage.Users, filter, update)
 }
 
-func AddProductToCart(client *mongo.Client, userID primitive.ObjectID, productID int, count int) (int64, error) {
+func AddProductToCart(client *mongo.Client, userID primitive.ObjectID, update bson.M) (int64, error) {
 	filter := bson.M{"_id": userID}
-
-	update := bson.M{
-		"$addToSet": bson.M{
-			"Cart": bson.M{
-				"Id":    productID,
-				"Count": count,
-			},
-		},
-	}
 
 	return storage.GeneralUpdate[entities.User](client, storage.Users, filter, update)
 }

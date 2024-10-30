@@ -2,27 +2,31 @@ package cookie
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 	"time"
 )
 
-func SetCookie(w http.ResponseWriter, session string, token string) {
+func SetCookie(w http.ResponseWriter, session string, userId string, token string) {
 	expirationTime := time.Now().Add(72 * time.Hour)
-
-	http.SetCookie(w, &http.Cookie{
+	value := fmt.Sprintf("userId=%s|token=%s", userId, token)
+	cookie := &http.Cookie{
 		Name:     session,
-		Value:    token,
+		Value:    value,
 		Path:     "/",
 		Expires:  expirationTime,
 		MaxAge:   72 * 3600,
 		HttpOnly: true,
 		Secure:   false,
-	})
+		SameSite: http.SameSiteLaxMode,
+	}
+	http.SetCookie(w, cookie)
+	log.Printf("Cookie details: %+v\n", cookie)
 }
 
 func GetUserIDFromCookie(cookieValue string) (string, error) {
-	parts := strings.Split(cookieValue, " ")
+	parts := strings.Split(cookieValue, "|")
 	if len(parts) != 2 {
 		return "", fmt.Errorf("Invalid cookie format")
 	}
@@ -51,12 +55,12 @@ func GetSessionValue(r *http.Request, cookieName string) (string, error) {
 
 func ClearSessionCookie(w http.ResponseWriter) {
 	http.SetCookie(w, &http.Cookie{
-		Name:     "session",       // Название куки
-		Value:    "",              // Устанавливаем пустое значение
-		Path:     "/",             // Путь, к которому относится кука
-		Expires:  time.Unix(0, 0), // Устанавливаем время истечения в прошлом
-		MaxAge:   -1,              // Указываем, что кука должна быть удалена
-		HttpOnly: true,            // Защита от доступа через JavaScript
-		Secure:   true,            // Устанавливайте true, если используете HTTPS
+		Name:     "session",
+		Value:    "",
+		Path:     "/",
+		Expires:  time.Unix(0, 0),
+		MaxAge:   -1,
+		HttpOnly: true,
+		Secure:   false,
 	})
 }

@@ -1,15 +1,15 @@
 package entities
 
 type User struct {
-	UserID           int           `bson:"Id" json:"id"`
-	Password         string        `bson:"Password" json:"password"`
-	FullName         FullName      `bson:"FullName" json:"full_name"`
-	Prone            string        `bson:"Prone" json:"prone"`
-	Email            string        `bson:"Email" json:"email"`
-	PostalService    PostalService `bson:"PostalService" json:"postal_service"`
-	MarketingConsent bool          `bson:"MarketingConsent" json:"marketing_consent"`
-	Cart             []CartItem    `bson:"Cart" json:"cart"`
-	Favourites       []int         `bson:"Favourites" json:"favourites"`
+	UserID            int               `bson:"Id" json:"id"`
+	Password          string            `bson:"Password" json:"password"`
+	FullName          FullName          `bson:"FullName" json:"full_name"`
+	Phone             string            `bson:"Phone" json:"phone"`
+	Email             string            `bson:"Email" json:"email"`
+	PostalServiceInfo PostalServiceInfo `bson:"PostalService" json:"postal_service"`
+	MarketingConsent  bool              `bson:"MarketingConsent" json:"marketing_consent"`
+	Cart              []CartItem        `bson:"Cart" json:"cart"`
+	Favourites        []int             `bson:"Favourites" json:"favourites"`
 }
 
 type FullName struct {
@@ -18,9 +18,12 @@ type FullName struct {
 	Patronymic string `bson:"Patronymic" json:"patronymic"`
 }
 
-type PostalService struct {
-	PostalName string `bson:"PostalName" json:"postal_name"`
-	Branch     string `bson:"Branch" json:"branch"`
+type PostalServiceInfo struct {
+	PostalType    string `bson:"PostalType" json:"postal_type"`
+	City          string `bson:"City" json:"city"`
+	CityRef       string `bson:"CityRef" json:"city_ref"`
+	ReceivingType string `bson:"ReceivingType" json:"receiving_type"`
+	BranchInfo    string `bson:"BranchInfo" json:"branch_info"`
 }
 
 type CartItem struct {

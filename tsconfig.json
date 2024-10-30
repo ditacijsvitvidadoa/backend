@@ -1,0 +1,33 @@
+{
+  "_id": "6705617ba7de02cd07228050",
+  "id": 1,
+  "age": "Adult",
+  "brand": "BrandName",
+  "category": "ForGirls",
+  "description": "Зустрічайте стильні та зручні джинси Mavi M1010152-84023, створені для сучасних жінок, які цінують комфорт і моду. Ці чорні джинси ідеально підходять для повсякденного носіння та легко комбінуються з різними топами і взуттям.",
+  "price": 1999,
+  "discount": 1000,
+  "image_urls": [
+    "http://localhost:5173/src/static/products/6705617ba7de02cd07228050-1.webp",
+    "http://localhost:5173/src/static/products/6705617ba7de02cd07228050-2.webp",
+    "http://localhost:5173/src/static/products/6705617ba7de02cd07228050-3.webp"
+  ],
+  "in_cart": true,
+  "is_favourite": true,
+  "material": "Plastic",
+  "size_info": {
+    "category": "clothing",
+    "has_table": true,
+    "sizes": {
+      "default_size": "M",
+      "has_sizes": true,
+      "size_values": [
+        "S",
+        "M",
+        "L",
+        "XL"
+      ]
+    }
+  },
+  "title": "Джинси жіночі Mavi"
+}

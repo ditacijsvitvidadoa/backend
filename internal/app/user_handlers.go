@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 	password2 "github.com/vzglad-smerti/password_hash"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"log"
 	"net/http"
 	"strings"
 )
@@ -24,7 +25,7 @@ func (a *App) createUserAccount(w http.ResponseWriter, r *http.Request) {
 
 	hashPassword, err := password2.Hash(password)
 	if err != nil {
-		sendError(w, http.StatusBadRequest, err.Error())
+		sendError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -37,7 +38,7 @@ func (a *App) createUserAccount(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if isExists {
-		sendError(w, http.StatusBadRequest, "Email already exists")
+		sendWarning(w, http.StatusConflict)
 		return
 	}
 
@@ -48,15 +49,15 @@ func (a *App) createUserAccount(w http.ResponseWriter, r *http.Request) {
 	}
 
 	newUser := entities.User{
-		UserID:           userID,
-		Password:         hashPassword,
-		FullName:         entities.FullName{FirstName: firstName, LastName: lastName, Patronymic: patronymic},
-		Prone:            phoneNumber,
-		Email:            email,
-		PostalService:    entities.PostalService{},
-		MarketingConsent: false,
-		Cart:             []entities.CartItem{},
-		Favourites:       []int{},
+		UserID:            userID,
+		Password:          hashPassword,
+		FullName:          entities.FullName{FirstName: firstName, LastName: lastName, Patronymic: patronymic},
+		Phone:             phoneNumber,
+		Email:             email,
+		PostalServiceInfo: entities.PostalServiceInfo{},
+		MarketingConsent:  false,
+		Cart:              []entities.CartItem{},
+		Favourites:        []int{},
 	}
 
 	_, err = requests.CreateNewUser(a.client, newUser)
@@ -93,12 +94,17 @@ func (a *App) getProfileInfo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	fmt.Println(UserInfo)
+
 	sendResponse(w, UserInfo)
 }
 
 func (a *App) logIn(w http.ResponseWriter, r *http.Request) {
+
 	email := r.FormValue("email")
 	password := r.FormValue("password")
+
+	log.Printf("Email: %s, Password: %s\n", email, password)
 
 	if email == "" || password == "" {
 		sendError(w, http.StatusBadRequest, "Email and password are required")
@@ -118,7 +124,7 @@ func (a *App) logIn(w http.ResponseWriter, r *http.Request) {
 	}
 
 	sessionID := uuid.New().String()
-	cookieValue := fmt.Sprintf("userId=%s; token=%s", userId.Hex(), token)
+	cookieValue := fmt.Sprintf("userId=%s|token=%s", userId.Hex(), token)
 	sessionKey := fmt.Sprintf("session:%s:%s", userId.Hex(), sessionID)
 
 	err = cash.SaveSessionToRedis(a.cash.Conn, sessionKey, token)
@@ -127,7 +133,8 @@ func (a *App) logIn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cookie.SetCookie(w, "session", cookieValue)
+	log.Printf("Session Key: %s, Cookie Value: %s\n", sessionKey, cookieValue)
+	cookie.SetCookie(w, "session", userId.Hex(), token)
 
 	sendOk(w)
 }
@@ -162,7 +169,6 @@ func (a *App) logout(w http.ResponseWriter, r *http.Request) {
 	cookie.ClearSessionCookie(w)
 
 	sendOk(w)
-	//http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
 func (a *App) checkAuthentication(w http.ResponseWriter, r *http.Request) {

@@ -12,13 +12,13 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func GetProducts(client *mongo.Client, filters bson.M, pageNum, pageSize *int) ([]entities.Product, error) {
+func GetProducts(client *mongo.Client, filters bson.M, pageNum, pageSize *int) ([]map[string]interface{}, error) {
 	opts := storage.GeneralQueryOptions{
 		Filter:   filters,
 		PageNum:  pageNum,
 		PageSize: pageSize,
 	}
-	return storage.GeneralFind[entities.Product](client, storage.Products, opts, false)
+	return storage.GeneralFind[map[string]interface{}](client, storage.Products, opts, false)
 }
 
 func LogInAccount(client *mongo.Client, email, password string) (primitive.ObjectID, error) {

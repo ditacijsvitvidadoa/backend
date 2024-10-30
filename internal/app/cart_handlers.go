@@ -24,7 +24,7 @@ func (a *App) getCartProducts(w http.ResponseWriter, r *http.Request) {
 
 	userObjectId, err := primitive.ObjectIDFromHex(userId)
 	if err != nil {
-		sendError(w, http.StatusUnauthorized, "Failed to retrieve user ID from session cookie.")
+		sendError(w, http.StatusUnauthorized, "Failed to convert user ID from session cookie.")
 		return
 	}
 
@@ -40,12 +40,12 @@ func (a *App) getCartProducts(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cart := UserInfo.Cart
-	var cartItemIDs []int
-	cartCountMap := make(map[int]int)
+	var cartItemIDs []int32
+	cartCountMap := make(map[int32]int)
 
 	for _, item := range cart {
-		cartItemIDs = append(cartItemIDs, item.ID)
-		cartCountMap[item.ID] = item.Count
+		cartItemIDs = append(cartItemIDs, int32(item.ID))
+		cartCountMap[int32(item.ID)] = item.Count
 	}
 
 	filters := bson.M{"id": bson.M{"$in": cartItemIDs}}
@@ -56,11 +56,16 @@ func (a *App) getCartProducts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if len(products) == 0 {
+		sendResponse(w, []interface{}{})
+		return
+	}
+
 	for i := range products {
-		if count, exists := cartCountMap[products[i].Id]; exists {
-			products[i].Count = count
+		if count, exists := cartCountMap[int32(products[i]["id"].(int32))]; exists {
+			products[i]["count"] = count
 		} else {
-			products[i].Count = 0
+			products[i]["count"] = 0
 		}
 	}
 
@@ -138,6 +143,9 @@ func (a *App) addCartProduct(w http.ResponseWriter, r *http.Request) {
 	countStr := r.URL.Query().Get("count")
 	count := 1
 
+	// Получаем значение size из параметров запроса
+	size := r.URL.Query().Get("size")
+
 	if countStr != "" {
 		count, err = strconv.Atoi(countStr)
 		if err != nil {
@@ -146,7 +154,21 @@ func (a *App) addCartProduct(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	changeCount, err := requests.AddProductToCart(a.client, userObjectId, productID, count)
+	// Формируем обновление
+	update := bson.M{
+		"$addToSet": bson.M{
+			"Cart": bson.M{
+				"Id":    productID,
+				"Count": count,
+			},
+		},
+	}
+
+	if size != "" {
+		update["$addToSet"].(bson.M)["Cart"].(bson.M)["details"] = bson.M{"size": size}
+	}
+
+	changeCount, err := requests.AddProductToCart(a.client, userObjectId, update)
 	if err != nil {
 		sendError(w, http.StatusInternalServerError, "Failed to add product to cart.")
 		return

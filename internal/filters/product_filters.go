@@ -3,12 +3,15 @@ package filters
 import (
 	"fmt"
 	"github.com/ditacijsvitvidadoa/backend/internal/validators"
+	"go.mongodb.org/mongo-driver/bson"
 	"net/http"
+	"net/url"
 	"strconv"
+	"strings"
 )
 
-func BuildFilter(r *http.Request) (map[string]interface{}, error) {
-	filter := make(map[string]interface{})
+func BuildFilter(r *http.Request) (bson.M, error) {
+	filter := bson.M{} // Общий фильтр
 
 	if err := addCategoryFilter(r, filter); err != nil {
 		return nil, err
@@ -25,73 +28,170 @@ func BuildFilter(r *http.Request) (map[string]interface{}, error) {
 	if err := addTypeFilter(r, filter); err != nil {
 		return nil, err
 	}
-	if err := addDiscountAndPriceFilters(r, filter); err != nil {
-		return nil, err
-	}
 
 	return filter, nil
 }
 
 func addCategoryFilter(r *http.Request, filter map[string]interface{}) error {
-	category := r.URL.Query().Get("category")
-	if category != "" {
-		if !validators.IsValidCategory(category) {
-			return fmt.Errorf("Invalid category: %s", category)
-		}
-		filter["category"] = category
+	categoriesParam, err := url.QueryUnescape(r.URL.Query().Get("categories"))
+	if err != nil {
+		return fmt.Errorf("failed to decode categories: %w", err)
 	}
+
+	if categoriesParam != "" {
+		categories := strings.Split(categoriesParam, ",")
+		var validCategories []string
+
+		for _, category := range categories {
+			category = strings.TrimSpace(category)
+			if validators.IsValidCategory(category) {
+				validCategories = append(validCategories, category)
+			} else {
+				return fmt.Errorf("invalid category: %s", category)
+			}
+		}
+
+		if len(validCategories) > 0 {
+			filter["category"] = bson.M{"$in": validCategories}
+		}
+	}
+
 	return nil
 }
 
 func addAgeFilter(r *http.Request, filter map[string]interface{}) error {
-	age := r.URL.Query().Get("age")
-	if age != "" {
-		if !validators.IsValidAge(age) {
-			return fmt.Errorf("Invalid age: %s", age)
+	ageParam, err := url.QueryUnescape(r.URL.Query().Get("age"))
+	if err != nil {
+		return fmt.Errorf("failed to decode age: %w", err)
+	}
+
+	if ageParam != "" {
+		ages := strings.Split(ageParam, ",")
+		var validAges []string
+
+		for _, age := range ages {
+			age = strings.TrimSpace(age)
+			if !validators.IsValidAge(age) {
+				return fmt.Errorf("invalid age: %s", age)
+			}
+			validAges = append(validAges, age)
 		}
-		filter["age"] = age
+
+		filter["age"] = bson.M{"$in": validAges}
 	}
 	return nil
 }
 
 func addBrandFilter(r *http.Request, filter map[string]interface{}) error {
-	brand := r.URL.Query().Get("brand")
-	if brand != "" {
-		if !validators.IsValidBrand(brand) {
-			return fmt.Errorf("Invalid brand: %s", brand)
+	brandParam, err := url.QueryUnescape(r.URL.Query().Get("brand"))
+	if err != nil {
+		return fmt.Errorf("failed to decode brand: %w", err)
+	}
+
+	if brandParam != "" {
+		brands := strings.Split(brandParam, ",")
+		var validBrands []string
+
+		for _, brand := range brands {
+			brand = strings.TrimSpace(brand)
+			if !validators.IsValidBrand(brand) {
+				return fmt.Errorf("invalid brand: %s", brand)
+			}
+			validBrands = append(validBrands, brand)
 		}
-		filter["brand"] = brand
+
+		filter["brand"] = bson.M{"$in": validBrands}
 	}
 	return nil
 }
 
 func addMaterialFilter(r *http.Request, filter map[string]interface{}) error {
-	material := r.URL.Query().Get("material")
-	if material != "" {
-		if !validators.IsValidMaterial(material) {
-			return fmt.Errorf("Invalid material: %s", material)
+	materialParam, err := url.QueryUnescape(r.URL.Query().Get("material"))
+	if err != nil {
+		return fmt.Errorf("failed to decode material: %w", err)
+	}
+
+	if materialParam != "" {
+		materials := strings.Split(materialParam, ",")
+		var validMaterials []string
+
+		for _, material := range materials {
+			material = strings.TrimSpace(material)
+			if !validators.IsValidMaterial(material) {
+				return fmt.Errorf("invalid material: %s", material)
+			}
+			validMaterials = append(validMaterials, material)
 		}
-		filter["material"] = material
+
+		filter["material"] = bson.M{"$in": validMaterials}
 	}
 	return nil
 }
 
 func addTypeFilter(r *http.Request, filter map[string]interface{}) error {
-	productType := r.URL.Query().Get("type")
-	if productType != "" {
-		if !validators.IsValidType(productType) {
-			return fmt.Errorf("Invalid type: %s", productType)
+	typeParam, err := url.QueryUnescape(r.URL.Query().Get("type"))
+	if err != nil {
+		return fmt.Errorf("failed to decode type: %w", err)
+	}
+
+	if typeParam != "" {
+		types := strings.Split(typeParam, ",")
+		var validTypes []string
+
+		for _, productType := range types {
+			productType = strings.TrimSpace(productType)
+			if !validators.IsValidType(productType) {
+				return fmt.Errorf("invalid type: %s", productType)
+			}
+			validTypes = append(validTypes, productType)
 		}
-		filter["type"] = productType
+
+		filter["type"] = bson.M{"$in": validTypes}
 	}
 	return nil
 }
 
-func addDiscountAndPriceFilters(r *http.Request, filter map[string]interface{}) error {
-	// Добавить логику обработки скидок и цен
-	// ...
-	return nil
-}
+//func addDiscountAndPriceFilters(products []entities.Product, r *http.Request) ([]entities.Product, error) {
+//	minPriceStr := r.URL.Query().Get("minPrice")
+//	maxPriceStr := r.URL.Query().Get("maxPrice")
+//
+//	var minPrice, maxPrice int
+//	var err error
+//
+//	if minPriceStr != "" {
+//		minPrice, err = strconv.Atoi(minPriceStr)
+//		if err != nil {
+//			return nil, fmt.Errorf("Invalid minPrice: %s", minPriceStr)
+//		}
+//	}
+//
+//	if maxPriceStr != "" {
+//		maxPrice, err = strconv.Atoi(maxPriceStr)
+//		if err != nil {
+//			return nil, fmt.Errorf("Invalid maxPrice: %s", maxPriceStr)
+//		}
+//	}
+//
+//	var filteredProducts []entities.Product
+//	for _, product := range products {
+//		if product.Discount != nil && *product.Discount > 0 {
+//			discountedPrice := product.Price - (*product.Discount)
+//
+//			if (minPriceStr == "" || discountedPrice >= minPrice) &&
+//				(maxPriceStr == "" || discountedPrice <= maxPrice) {
+//				filteredProducts = append(filteredProducts, product)
+//			}
+//		} else {
+//			// Проверка на обычную цену
+//			if (minPriceStr == "" || product.Price >= minPrice) &&
+//				(maxPriceStr == "" || product.Price <= maxPrice) {
+//				filteredProducts = append(filteredProducts, product)
+//			}
+//		}
+//	}
+//
+//	return filteredProducts, nil
+//}
 
 func GetPaginationParams(r *http.Request) (int, int) {
 	pageNum := 1
@@ -102,7 +202,7 @@ func GetPaginationParams(r *http.Request) (int, int) {
 		}
 	}
 
-	pageSize := 10
+	pageSize := 24
 	if size := r.URL.Query().Get("pageSize"); size != "" {
 		s, err := strconv.Atoi(size)
 		if err == nil && s > 0 {
