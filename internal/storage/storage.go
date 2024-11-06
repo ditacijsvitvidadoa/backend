@@ -14,9 +14,11 @@ var (
 	MongoDBName    = "DutyachiySvitDB"
 	MongoDBTimeout = 10 * time.Second
 
-	Users    = "Users"
-	Products = "Products"
-	Counters = "Counters"
+	Users         = "Users"
+	Products      = "Products"
+	Counters      = "Counters"
+	Orders        = "Orders"
+	ArchiveOrders = "ArchiveOrders"
 )
 
 type GeneralQueryOptions struct {

@@ -32,3 +32,8 @@ func sendResponse(w http.ResponseWriter, data any) {
 		log.Printf("writing response: %s", err)
 	}
 }
+
+func sendNoContent(w http.ResponseWriter) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusNoContent)
+}

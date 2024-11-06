@@ -58,3 +58,11 @@ func UpdateUserProfileField(client *mongo.Client, userID primitive.ObjectID, fie
 	fmt.Printf("Successfully updated field '%s' for user: %s\n", fieldPath, userID.Hex())
 	return nil
 }
+
+func UpdateOrderStatus(client *mongo.Client, userID primitive.ObjectID, newStatus int) (int64, error) {
+	filter := bson.M{"_id": userID}
+
+	update := bson.M{"$set": bson.M{"Status": newStatus}}
+
+	return storage.GeneralUpdate[any](client, storage.Orders, filter, update)
+}

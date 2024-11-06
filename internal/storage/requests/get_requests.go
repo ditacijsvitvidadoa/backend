@@ -21,6 +21,14 @@ func GetProducts(client *mongo.Client, filters bson.M, pageNum, pageSize *int) (
 	return storage.GeneralFind[map[string]interface{}](client, storage.Products, opts, false)
 }
 
+func GetAll(client *mongo.Client, CollectionName string) ([]map[string]interface{}, error) {
+	opts := storage.GeneralQueryOptions{
+		Filter: bson.M{},
+	}
+
+	return storage.GeneralFind[map[string]interface{}](client, CollectionName, opts, false)
+}
+
 func LogInAccount(client *mongo.Client, email, password string) (primitive.ObjectID, error) {
 	filter := bson.M{"Email": email}
 
@@ -60,6 +68,10 @@ func GetUserByID(client *mongo.Client, userID primitive.ObjectID) (entities.User
 		return entities.User{}, err
 	}
 
+	if len(results) == 0 {
+		return entities.User{}, errors.New("user not found")
+	}
+
 	return results[0], nil
 }
 
@@ -76,7 +88,7 @@ func GetCartByUserID(client *mongo.Client, userID primitive.ObjectID) ([]entitie
 	return results[0].Cart, nil
 }
 
-func GetFavouritesByUserID(client *mongo.Client, userID primitive.ObjectID) ([]int, error) {
+func GetFavouritesByUserID(client *mongo.Client, userID primitive.ObjectID) ([]int32, error) {
 	opts := storage.GeneralQueryOptions{
 		Filter: bson.M{"_id": userID},
 	}

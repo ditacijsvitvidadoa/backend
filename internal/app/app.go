@@ -27,6 +27,7 @@ func (a *App) GetRouter() http.Handler {
 	r.HandleFunc("GET /api/get-product/{id}", a.getProductByID)
 	r.HandleFunc("GET /api/check-auth", a.checkAuthentication)
 	r.HandleFunc("GET /api/get-cart-products", a.getCartProducts)
+	r.HandleFunc("POST /api/create-product", a.CreateProduct)
 
 	r.HandleFunc("POST /api/login", a.logIn)
 	r.HandleFunc("GET /api/user-account", a.getProfileInfo)
@@ -45,6 +46,15 @@ func (a *App) GetRouter() http.Handler {
 
 	r.HandleFunc("PUT /api/add-favourite-product/{id}", a.addFavouriteProduct)
 	r.HandleFunc("DELETE /api/delete-favourite-product/{id}", a.deleteFavouriteProduct)
+
+	r.HandleFunc("PUT /api/add-order", a.AddOrder)
+	r.HandleFunc("DELETE /api/delete-order/{id}", a.DeleteOrder)
+	r.HandleFunc("GET /api/get-orders", a.GetOrders)
+	r.HandleFunc("PUT /api/change-order-status/{id}", a.ChangeOrderStatus)
+	r.HandleFunc("DELETE /api/archive-order/{id}", a.ArchiveOrder)
+
+	r.HandleFunc("GET /api/get-archive-orders", a.GetArchiveOrders)
+	r.HandleFunc("DELETE /api/refresh-archive-order/{id}", a.RefreshArchiveOrder)
 
 	return corsMiddleware(r)
 }

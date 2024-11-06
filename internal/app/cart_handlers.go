@@ -34,8 +34,8 @@ func (a *App) getCartProducts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if UserInfo.Cart == nil {
-		sendError(w, http.StatusOK, "Cart is empty.")
+	if len(UserInfo.Cart) == 0 {
+		sendNoContent(w)
 		return
 	}
 
@@ -44,8 +44,8 @@ func (a *App) getCartProducts(w http.ResponseWriter, r *http.Request) {
 	cartCountMap := make(map[int32]int)
 
 	for _, item := range cart {
-		cartItemIDs = append(cartItemIDs, int32(item.ID))
-		cartCountMap[int32(item.ID)] = item.Count
+		cartItemIDs = append(cartItemIDs, item.ID)
+		cartCountMap[item.ID] = item.Count
 	}
 
 	filters := bson.M{"id": bson.M{"$in": cartItemIDs}}
@@ -57,12 +57,12 @@ func (a *App) getCartProducts(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(products) == 0 {
-		sendResponse(w, []interface{}{})
+		sendResponse(w, []any{})
 		return
 	}
 
 	for i := range products {
-		if count, exists := cartCountMap[int32(products[i]["id"].(int32))]; exists {
+		if count, exists := cartCountMap[products[i]["id"].(int32)]; exists {
 			products[i]["count"] = count
 		} else {
 			products[i]["count"] = 0
@@ -143,7 +143,6 @@ func (a *App) addCartProduct(w http.ResponseWriter, r *http.Request) {
 	countStr := r.URL.Query().Get("count")
 	count := 1
 
-	// Получаем значение size из параметров запроса
 	size := r.URL.Query().Get("size")
 
 	if countStr != "" {

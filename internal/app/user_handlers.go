@@ -57,7 +57,7 @@ func (a *App) createUserAccount(w http.ResponseWriter, r *http.Request) {
 		PostalServiceInfo: entities.PostalServiceInfo{},
 		MarketingConsent:  false,
 		Cart:              []entities.CartItem{},
-		Favourites:        []int{},
+		Favourites:        []int32{},
 	}
 
 	_, err = requests.CreateNewUser(a.client, newUser)
@@ -94,7 +94,21 @@ func (a *App) getProfileInfo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Println(UserInfo)
+	var postalInfoArray []map[string]string
+	switch postalInfo := UserInfo.PostalServiceInfo.PostalInfo.(type) {
+	case map[string]interface{}:
+		for key, value := range postalInfo {
+			postalInfoArray = append(postalInfoArray, map[string]string{
+				"Key":   key,
+				"Value": value.(string),
+			})
+		}
+		UserInfo.PostalServiceInfo.PostalInfo = postalInfoArray
+	case string:
+		fmt.Println("PostalInfo is a string:", postalInfo)
+	default:
+		fmt.Println("Unknown type of PostalInfo")
+	}
 
 	sendResponse(w, UserInfo)
 }

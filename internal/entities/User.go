@@ -6,10 +6,10 @@ type User struct {
 	FullName          FullName          `bson:"FullName" json:"full_name"`
 	Phone             string            `bson:"Phone" json:"phone"`
 	Email             string            `bson:"Email" json:"email"`
-	PostalServiceInfo PostalServiceInfo `bson:"PostalService" json:"postal_service"`
+	PostalServiceInfo PostalServiceInfo `bson:"PostalServiceInfo" json:"postal_service"`
 	MarketingConsent  bool              `bson:"MarketingConsent" json:"marketing_consent"`
 	Cart              []CartItem        `bson:"Cart" json:"cart"`
-	Favourites        []int             `bson:"Favourites" json:"favourites"`
+	Favourites        []int32           `bson:"Favourites" json:"favourites"`
 }
 
 type FullName struct {
@@ -19,14 +19,14 @@ type FullName struct {
 }
 
 type PostalServiceInfo struct {
-	PostalType    string `bson:"PostalType" json:"postal_type"`
-	City          string `bson:"City" json:"city"`
-	CityRef       string `bson:"CityRef" json:"city_ref"`
-	ReceivingType string `bson:"ReceivingType" json:"receiving_type"`
-	BranchInfo    string `bson:"BranchInfo" json:"branch_info"`
+	PostalType    string      `bson:"PostalType" json:"postal_type"`
+	City          string      `bson:"City" json:"city"`
+	CityRef       string      `bson:"CityRef" json:"city_ref"`
+	ReceivingType string      `bson:"ReceivingType" json:"receiving_type"`
+	PostalInfo    interface{} `bson:"PostalInfo" json:"postal_info"`
 }
 
 type CartItem struct {
-	Count int `bson:"Count" json:"count"`
-	ID    int `bson:"Id" json:"id"`
+	Count int   `bson:"Count" json:"count"`
+	ID    int32 `bson:"Id" json:"id"`
 }

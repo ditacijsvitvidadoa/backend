@@ -10,3 +10,11 @@ import (
 func CreateNewUser(client *mongo.Client, newUser entities.User) (primitive.ObjectID, error) {
 	return storage.GeneralInsert(client, storage.Users, newUser)
 }
+
+func CreateNewOrder(client *mongo.Client, order entities.Order) (primitive.ObjectID, error) {
+	return storage.GeneralInsert(client, storage.Orders, order)
+}
+
+func CreateNewProduct(client *mongo.Client, product entities.Product) (primitive.ObjectID, error) {
+	return storage.GeneralInsert(client, storage.Products, product)
+}

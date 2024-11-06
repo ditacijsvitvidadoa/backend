@@ -2,7 +2,7 @@ package utils
 
 import "github.com/ditacijsvitvidadoa/backend/internal/entities"
 
-func CartContains(cart []entities.CartItem, productID int) bool {
+func CartContains(cart []entities.CartItem, productID int32) bool {
 	for _, item := range cart {
 		if item.ID == productID {
 			return true
@@ -11,7 +11,7 @@ func CartContains(cart []entities.CartItem, productID int) bool {
 	return false
 }
 
-func FavouritesContains(favourites []int, productID int) bool {
+func FavouritesContains(favourites []int32, productID int32) bool {
 	for _, id := range favourites {
 		if id == productID {
 			return true
