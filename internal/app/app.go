@@ -44,6 +44,8 @@ func (a *App) GetRouter() http.Handler {
 	r.HandleFunc("DELETE /api/delete-cart-product/{id}", a.deleteCartProduct)
 	r.HandleFunc("PUT /api/add-product-to-cart/{id}", a.addCartProduct)
 
+	r.HandleFunc("PUT /api/update-cart-product-count", a.UpdateCount)
+
 	r.HandleFunc("PUT /api/add-favourite-product/{id}", a.addFavouriteProduct)
 	r.HandleFunc("DELETE /api/delete-favourite-product/{id}", a.deleteFavouriteProduct)
 

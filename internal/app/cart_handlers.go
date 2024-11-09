@@ -190,3 +190,61 @@ func (a *App) addCartProduct(w http.ResponseWriter, r *http.Request) {
 
 	sendOk(w)
 }
+
+func (a *App) UpdateCount(w http.ResponseWriter, r *http.Request) {
+	countStr := r.URL.Query().Get("count")
+	if countStr == "" {
+		sendError(w, http.StatusBadRequest, "Dont have new count value")
+		return
+	}
+
+	sessionValue, err := cookie.GetSessionValue(r, "session")
+	if err != nil {
+		sendError(w, http.StatusUnauthorized, "Unable to retrieve session value. Please ensure you are logged in.")
+		return
+	}
+
+	userId, err := cookie.GetUserIDFromCookie(sessionValue)
+	if err != nil {
+		sendError(w, http.StatusUnauthorized, "Failed to retrieve user ID from session cookie.")
+		return
+	}
+
+	userObjectId, err := primitive.ObjectIDFromHex(userId)
+	if err != nil {
+		sendError(w, http.StatusUnauthorized, "Failed to retrieve user ID from session cookie.")
+		return
+	}
+
+	count, err := strconv.Atoi(countStr)
+	if err != nil {
+		sendError(w, http.StatusBadRequest, "Wrong count value; Not be int")
+		return
+	}
+
+	id := r.URL.Query().Get("id")
+	if id == "" {
+		sendError(w, http.StatusBadRequest, "Dont have id value")
+		return
+	}
+	size := r.URL.Query().Get("size")
+	color := r.URL.Query().Get("color")
+
+	filter := bson.M{"Id": id}
+
+	if size != "" {
+		filter["Details.Size"] = size
+	}
+	if color != "" {
+		filter["Details.Color"] = color
+	}
+
+	wasUpdated, err := requests.UpdateCartProductCount(a.client, userObjectId, filter, count)
+
+	if wasUpdated == 0 {
+		sendError(w, http.StatusNoContent, "Nothing was changed")
+		return
+	}
+
+	sendOk(w)
+}

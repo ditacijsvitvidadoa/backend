@@ -1,12 +1,14 @@
 package requests
 
 import (
+	"context"
 	"fmt"
 	"github.com/ditacijsvitvidadoa/backend/internal/entities"
 	"github.com/ditacijsvitvidadoa/backend/internal/storage"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func UpdateUserCart(client *mongo.Client, userID primitive.ObjectID, productID string) (int64, error) {
@@ -65,4 +67,33 @@ func UpdateOrderStatus(client *mongo.Client, userID primitive.ObjectID, newStatu
 	update := bson.M{"$set": bson.M{"Status": newStatus}}
 
 	return storage.GeneralUpdate[any](client, storage.Orders, filter, update)
+}
+
+func UpdateCartProductCount(client *mongo.Client, userID primitive.ObjectID, filter bson.M, newCount int) (int64, error) {
+	userFilter := bson.M{"_id": userID}
+
+	update := bson.M{
+		"$set": bson.M{
+			"Cart.$[elem].Count": newCount,
+		},
+	}
+
+	arrayFilters := []interface{}{
+		bson.M{"elem.Id": filter["Id"]},
+	}
+
+	result, err := client.Database(storage.MongoDBName).Collection(storage.Users).UpdateOne(
+		context.Background(),
+		userFilter,
+		update,
+		options.Update().SetArrayFilters(options.ArrayFilters{
+			Filters: arrayFilters,
+		}),
+	)
+
+	if err != nil {
+		return 0, err
+	}
+
+	return result.ModifiedCount, nil
 }
