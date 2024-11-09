@@ -77,15 +77,11 @@ func IsValidPriceRange(from, to int) bool {
 	return from >= 0 && to >= from
 }
 
-func ExtractProductID(r *http.Request) (int, error) {
-	productIDStr := r.PathValue("id")
-	if productIDStr == "" {
-		return 0, fmt.Errorf("Product ID is empty")
+func ExtractProductID(r *http.Request) (string, error) {
+	productID := r.PathValue("id")
+	if productID == "" {
+		return "", fmt.Errorf("Product ID is empty")
 	}
 
-	productID, err := strconv.Atoi(productIDStr)
-	if err != nil {
-		return 0, fmt.Errorf("invalid product id: %s", productIDStr)
-	}
 	return productID, nil
 }

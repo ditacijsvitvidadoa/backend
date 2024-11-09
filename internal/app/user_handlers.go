@@ -57,7 +57,7 @@ func (a *App) createUserAccount(w http.ResponseWriter, r *http.Request) {
 		PostalServiceInfo: entities.PostalServiceInfo{},
 		MarketingConsent:  false,
 		Cart:              []entities.CartItem{},
-		Favourites:        []int32{},
+		Favourites:        []string{},
 	}
 
 	_, err = requests.CreateNewUser(a.client, newUser)

@@ -9,7 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func UpdateUserCart(client *mongo.Client, userID primitive.ObjectID, productID int) (int64, error) {
+func UpdateUserCart(client *mongo.Client, userID primitive.ObjectID, productID string) (int64, error) {
 	filter := bson.M{"_id": userID}
 
 	update := bson.M{

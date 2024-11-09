@@ -11,7 +11,7 @@ import (
 )
 
 func BuildFilter(r *http.Request) (bson.M, error) {
-	filter := bson.M{} // Общий фильтр
+	filter := bson.M{}
 
 	if err := addCategoryFilter(r, filter); err != nil {
 		return nil, err
@@ -32,7 +32,7 @@ func BuildFilter(r *http.Request) (bson.M, error) {
 	return filter, nil
 }
 
-func addCategoryFilter(r *http.Request, filter map[string]interface{}) error {
+func addCategoryFilter(r *http.Request, filter bson.M) error {
 	categoriesParam, err := url.QueryUnescape(r.URL.Query().Get("categories"))
 	if err != nil {
 		return fmt.Errorf("failed to decode categories: %w", err)
@@ -52,14 +52,14 @@ func addCategoryFilter(r *http.Request, filter map[string]interface{}) error {
 		}
 
 		if len(validCategories) > 0 {
-			filter["category"] = bson.M{"$in": validCategories}
+			filter["Category"] = bson.M{"$in": validCategories}
 		}
 	}
 
 	return nil
 }
 
-func addAgeFilter(r *http.Request, filter map[string]interface{}) error {
+func addAgeFilter(r *http.Request, filter bson.M) error {
 	ageParam, err := url.QueryUnescape(r.URL.Query().Get("age"))
 	if err != nil {
 		return fmt.Errorf("failed to decode age: %w", err)
@@ -82,7 +82,7 @@ func addAgeFilter(r *http.Request, filter map[string]interface{}) error {
 	return nil
 }
 
-func addBrandFilter(r *http.Request, filter map[string]interface{}) error {
+func addBrandFilter(r *http.Request, filter bson.M) error {
 	brandParam, err := url.QueryUnescape(r.URL.Query().Get("brand"))
 	if err != nil {
 		return fmt.Errorf("failed to decode brand: %w", err)
@@ -105,7 +105,7 @@ func addBrandFilter(r *http.Request, filter map[string]interface{}) error {
 	return nil
 }
 
-func addMaterialFilter(r *http.Request, filter map[string]interface{}) error {
+func addMaterialFilter(r *http.Request, filter bson.M) error {
 	materialParam, err := url.QueryUnescape(r.URL.Query().Get("material"))
 	if err != nil {
 		return fmt.Errorf("failed to decode material: %w", err)
@@ -128,7 +128,7 @@ func addMaterialFilter(r *http.Request, filter map[string]interface{}) error {
 	return nil
 }
 
-func addTypeFilter(r *http.Request, filter map[string]interface{}) error {
+func addTypeFilter(r *http.Request, filter bson.M) error {
 	typeParam, err := url.QueryUnescape(r.URL.Query().Get("type"))
 	if err != nil {
 		return fmt.Errorf("failed to decode type: %w", err)

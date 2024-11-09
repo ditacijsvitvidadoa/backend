@@ -1,8 +1,11 @@
 package cash
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/ditacijsvitvidadoa/backend/internal/entities"
 	"github.com/gomodule/redigo/redis"
+	"log"
 )
 
 func SaveSessionToRedis(redisClient redis.Conn, cookieSession, token string) error {
@@ -68,4 +71,26 @@ func DeleteSessionByToken(redisClient redis.Conn, token string) error {
 	}
 
 	return fmt.Errorf("session with token %s not found", token)
+}
+
+func GetCitiesFromRedis(redisClient redis.Conn) ([]entities.City, error) {
+	keys, err := redis.Strings(redisClient.Do("KEYS", "city.*"))
+	if err != nil {
+		return nil, fmt.Errorf("could not retrieve cities: %v", err)
+	}
+	var cities []entities.City
+	for _, key := range keys {
+		cityData, err := redis.Bytes(redisClient.Do("GET", key))
+		if err != nil {
+			log.Printf("Error getting data for key %s: %v", key, err)
+			continue
+		}
+		var city entities.City
+		if err := json.Unmarshal(cityData, &city); err != nil {
+			log.Printf("Error unmarshalling data for key %s: %v", key, err)
+			continue
+		}
+		cities = append(cities, city)
+	}
+	return cities, nil
 }

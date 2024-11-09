@@ -60,13 +60,13 @@ func (a *App) AddOrder(w http.ResponseWriter, r *http.Request) {
 
 	var products []entities.Product
 	for i := 0; ; i++ {
-		title := r.FormValue(fmt.Sprintf("products[%d][title]", i))
+		title := r.FormValue(fmt.Sprintf("products[%d][Title]", i))
 		if title == "" {
 			break
 		}
 
-		priceStr := r.FormValue(fmt.Sprintf("products[%d][price]", i))
-		discountStr := r.FormValue(fmt.Sprintf("products[%d][discount]", i))
+		priceStr := r.FormValue(fmt.Sprintf("products[%d][Price]", i))
+		discountStr := r.FormValue(fmt.Sprintf("products[%d][Discount]", i))
 
 		price, err := strconv.Atoi(priceStr)
 		if err != nil {
@@ -80,7 +80,7 @@ func (a *App) AddOrder(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		imageUrls := r.Form[fmt.Sprintf("products[%d][image_urls][]", i)]
+		imageUrls := r.Form[fmt.Sprintf("products[%d][Image_urls][]", i)]
 
 		products = append(products, entities.Product{
 			Title:     title,

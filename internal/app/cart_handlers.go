@@ -2,6 +2,7 @@ package app
 
 import (
 	"github.com/ditacijsvitvidadoa/backend/internal/cookie"
+	"github.com/ditacijsvitvidadoa/backend/internal/entities"
 	"github.com/ditacijsvitvidadoa/backend/internal/storage/requests"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -39,17 +40,12 @@ func (a *App) getCartProducts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cart := UserInfo.Cart
-	var cartItemIDs []int32
-	cartCountMap := make(map[int32]int)
-
-	for _, item := range cart {
+	cartItemIDs := make([]string, 0, len(UserInfo.Cart))
+	for _, item := range UserInfo.Cart {
 		cartItemIDs = append(cartItemIDs, item.ID)
-		cartCountMap[item.ID] = item.Count
 	}
 
-	filters := bson.M{"id": bson.M{"$in": cartItemIDs}}
-
+	filters := bson.M{"Id": bson.M{"$in": cartItemIDs}}
 	products, err := requests.GetProducts(a.client, filters, nil, nil)
 	if err != nil {
 		sendError(w, http.StatusNoContent, "Failed to retrieve products from storage.")
@@ -61,25 +57,44 @@ func (a *App) getCartProducts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	for i := range products {
-		if count, exists := cartCountMap[products[i]["id"].(int32)]; exists {
-			products[i]["count"] = count
-		} else {
-			products[i]["count"] = 0
+	productMap := make(map[string]entities.Product)
+	for _, product := range products {
+		productMap[product.Id] = product
+	}
+
+	var cartProducts []entities.CartProduct
+
+	for _, cartItem := range UserInfo.Cart {
+		if product, exists := productMap[cartItem.ID]; exists {
+			cartProduct := entities.CartProduct{
+				Id:       product.Id,
+				Articul:  product.Articul,
+				Code:     product.Code,
+				ImageUrl: product.ImageUrls[0],
+				Title:    product.Title,
+				Price:    product.Price,
+				Discount: product.Discount,
+				Count:    cartItem.Count,
+			}
+
+			if cartItem.Details != nil {
+				if cartItem.Details.Size != "" {
+					cartProduct.Size = &cartItem.Details.Size
+				}
+				if cartItem.Details.Color != "" {
+					cartProduct.Color = &cartItem.Details.Color
+				}
+			}
+
+			cartProducts = append(cartProducts, cartProduct)
 		}
 	}
 
-	sendResponse(w, products)
+	sendResponse(w, cartProducts)
 }
 
 func (a *App) deleteCartProduct(w http.ResponseWriter, r *http.Request) {
-	productIDStr := r.PathValue("id")
-
-	productID, err := strconv.Atoi(productIDStr)
-	if err != nil {
-		sendError(w, http.StatusBadRequest, "Invalid product ID.")
-		return
-	}
+	productID := r.PathValue("id")
 
 	sessionValue, err := cookie.GetSessionValue(r, "session")
 	if err != nil {
@@ -114,13 +129,7 @@ func (a *App) deleteCartProduct(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) addCartProduct(w http.ResponseWriter, r *http.Request) {
-	productIDStr := r.PathValue("id")
-
-	productID, err := strconv.Atoi(productIDStr)
-	if err != nil {
-		sendError(w, http.StatusBadRequest, "Invalid product ID.")
-		return
-	}
+	productID := r.PathValue("id")
 
 	sessionValue, err := cookie.GetSessionValue(r, "session")
 	if err != nil {
@@ -142,9 +151,6 @@ func (a *App) addCartProduct(w http.ResponseWriter, r *http.Request) {
 
 	countStr := r.URL.Query().Get("count")
 	count := 1
-
-	size := r.URL.Query().Get("size")
-
 	if countStr != "" {
 		count, err = strconv.Atoi(countStr)
 		if err != nil {
@@ -153,18 +159,22 @@ func (a *App) addCartProduct(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Формируем обновление
+	details := bson.M{}
+	if size := r.URL.Query().Get("size"); size != "" {
+		details["Size"] = size
+	}
+	if color := r.URL.Query().Get("color"); color != "" {
+		details["Color"] = color
+	}
+
 	update := bson.M{
 		"$addToSet": bson.M{
 			"Cart": bson.M{
-				"Id":    productID,
-				"Count": count,
+				"Id":      productID,
+				"Count":   count,
+				"Details": details,
 			},
 		},
-	}
-
-	if size != "" {
-		update["$addToSet"].(bson.M)["Cart"].(bson.M)["details"] = bson.M{"size": size}
 	}
 
 	changeCount, err := requests.AddProductToCart(a.client, userObjectId, update)

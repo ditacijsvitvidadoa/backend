@@ -6,10 +6,10 @@ type User struct {
 	FullName          FullName          `bson:"FullName" json:"full_name"`
 	Phone             string            `bson:"Phone" json:"phone"`
 	Email             string            `bson:"Email" json:"email"`
-	PostalServiceInfo PostalServiceInfo `bson:"PostalServiceInfo" json:"postal_service"`
+	PostalServiceInfo PostalServiceInfo `bson:"PostalService" json:"postal_service"`
 	MarketingConsent  bool              `bson:"MarketingConsent" json:"marketing_consent"`
 	Cart              []CartItem        `bson:"Cart" json:"cart"`
-	Favourites        []int32           `bson:"Favourites" json:"favourites"`
+	Favourites        []string          `bson:"Favourites" json:"favourites"`
 }
 
 type FullName struct {
@@ -27,6 +27,12 @@ type PostalServiceInfo struct {
 }
 
 type CartItem struct {
-	Count int   `bson:"Count" json:"count"`
-	ID    int32 `bson:"Id" json:"id"`
+	Count   int              `bson:"Count" json:"count"`
+	ID      string           `bson:"Id" json:"id"`
+	Details *CartItemDetails `bson:"Details,omitempty" json:"details,omitempty"`
+}
+
+type CartItemDetails struct {
+	Size  string `bson:"Size" json:"size"`
+	Color string `bson:"Color" json:"color"`
 }

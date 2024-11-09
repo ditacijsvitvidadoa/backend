@@ -11,6 +11,7 @@ import (
 	"github.com/ditacijsvitvidadoa/backend/internal/validators"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -29,14 +30,14 @@ func (a *App) CreateProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Println(objectId)
+	log.Println(objectId)
 
 	sendOk(w)
 }
 
 func collectProductData(r *http.Request) (entities.Product, error) {
 	productID := utils.GenerateUUID()
-	fmt.Println(productID)
+
 	title := r.FormValue("title")
 	if title == "" {
 		return entities.Product{}, errors.New("title is required")
@@ -78,34 +79,31 @@ func collectProductData(r *http.Request) (entities.Product, error) {
 	if err != nil {
 		return entities.Product{}, fmt.Errorf("invalid discount: %v", err)
 	}
-	fmt.Println("discount", discount)
 
 	var sizeInfo *entities.SizeInfo
 	if r.FormValue("has_sizes") != "" {
-		sizeInfo = &entities.SizeInfo{
-			Category: r.FormValue("table.category"),
-			HasTable: r.FormValue("has_table") == "false",
-		}
-
-		defaultSize := "M"
 		sizeValues := r.Form["size_value"]
-
-		sizeInfo.Sizes.DefaultSize = defaultSize
-		sizeInfo.Sizes.HasSizes = len(sizeValues) > 0
-		sizeInfo.Sizes.SizeValues = sizeValues
+		if len(sizeValues) > 0 {
+			sizeInfo = &entities.SizeInfo{
+				Category: r.FormValue("table.category"),
+				HasTable: r.FormValue("has_table") == "false",
+				Sizes: entities.Sizes{
+					DefaultSize: sizeValues[0],
+					HasSizes:    true,
+					SizeValues:  sizeValues,
+				},
+			}
+		}
 	}
-
-	fmt.Println()
-	fmt.Printf("sizeInfo %v", sizeInfo)
-	fmt.Println()
 
 	var colorInfo *entities.ColorInfo
 	colorValues := r.Form["colors"]
 	if len(colorValues) > 0 {
-		colorInfo = &entities.ColorInfo{Colors: colorValues}
+		colorInfo = &entities.ColorInfo{
+			DefaultColor: colorValues[0],
+			Colors:       colorValues,
+		}
 	}
-
-	fmt.Println("colorInfo", colorInfo)
 
 	var characteristics []*entities.Characteristic
 	characteristicKeys := r.Form["characteristic_key"]
@@ -159,7 +157,7 @@ func (a *App) getProducts(w http.ResponseWriter, r *http.Request) {
 	var userID string
 	var userObjectId primitive.ObjectID
 	var cart []entities.CartItem
-	var favourites []int32
+	var favourites []string
 
 	if err == nil {
 		userID, err = cookie.GetUserIDFromCookie(cookieValue)
@@ -171,7 +169,6 @@ func (a *App) getProducts(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-
 	filter, err := filters.BuildFilter(r)
 	if err != nil {
 		sendError(w, http.StatusBadRequest, err.Error())
@@ -197,22 +194,14 @@ func (a *App) getProducts(w http.ResponseWriter, r *http.Request) {
 
 	if userID != "" {
 		for i := range products {
-			var productID int32
-			if id, ok := products[i]["id"].(int32); ok {
-				productID = int32(id)
+			productID := products[i].Id
+			if productID == "" {
+				continue
 			}
 
-			if utils.CartContains(cart, productID) {
-				products[i]["in_cart"] = true
-			} else {
-				products[i]["in_cart"] = false
-			}
+			products[i].InCart = utils.CartContains(cart, productID, "", "")
 
-			if utils.FavouritesContains(favourites, productID) {
-				products[i]["is_favourite"] = true
-			} else {
-				products[i]["is_favourite"] = false
-			}
+			products[i].IsFavourite = utils.FavouritesContains(favourites, productID)
 		}
 	}
 
@@ -231,7 +220,10 @@ func (a *App) getProductByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	filter := bson.M{"id": productID}
+	size := r.URL.Query().Get("size")
+	color := r.URL.Query().Get("color")
+
+	filter := bson.M{"Id": productID}
 
 	products, err := requests.GetProducts(a.client, filter, nil, nil)
 	if err != nil {
@@ -246,8 +238,8 @@ func (a *App) getProductByID(w http.ResponseWriter, r *http.Request) {
 
 	product := products[0]
 
-	product["in_cart"] = false
-	product["is_favourite"] = false
+	product.InCart = false
+	product.IsFavourite = false
 
 	cookieValue, err := cookie.GetSessionValue(r, "session")
 	if err == nil {
@@ -256,14 +248,15 @@ func (a *App) getProductByID(w http.ResponseWriter, r *http.Request) {
 			userObjectId, err := primitive.ObjectIDFromHex(userID)
 			if err == nil {
 				cart, _ := requests.GetCartByUserID(a.client, userObjectId)
+				fmt.Println(cart)
 				favourites, _ := requests.GetFavouritesByUserID(a.client, userObjectId)
 
-				if utils.CartContains(cart, int32(productID)) {
-					product["in_cart"] = true
+				if utils.CartContains(cart, productID, size, color) {
+					product.InCart = true
 				}
 
-				if utils.FavouritesContains(favourites, int32(productID)) {
-					product["is_favourite"] = true
+				if utils.FavouritesContains(favourites, productID) {
+					product.IsFavourite = true
 				}
 			}
 		}
@@ -272,7 +265,7 @@ func (a *App) getProductByID(w http.ResponseWriter, r *http.Request) {
 	sendResponse(w, product)
 }
 
-func buildProductDetails(products []map[string]interface{}) map[string]interface{} {
+func buildProductDetails(products []entities.Product) map[string]interface{} {
 	if len(products) == 0 {
 		return map[string]interface{}{
 			"total_count":       0,
@@ -281,7 +274,7 @@ func buildProductDetails(products []map[string]interface{}) map[string]interface
 		}
 	}
 
-	var minProduct, maxProduct map[string]interface{}
+	var minProduct, maxProduct entities.Product
 	minPrice := int(^uint(0) >> 1)
 	maxPrice := 0
 
@@ -301,22 +294,20 @@ func buildProductDetails(products []map[string]interface{}) map[string]interface
 	return map[string]interface{}{
 		"total_count": len(products),
 		"min_price_product": map[string]interface{}{
-			"id":    minProduct["id"],
+			"id":    minProduct.Id,
 			"price": minPrice,
 		},
 		"max_price_product": map[string]interface{}{
-			"id":    maxProduct["id"],
+			"id":    maxProduct.Id,
 			"price": maxPrice,
 		},
 	}
 }
 
-func getEffectivePrice(product map[string]interface{}) int {
-	if discount, ok := product["discount"].(int32); ok && discount > 0 {
-		return int(discount)
+func getEffectivePrice(product entities.Product) int {
+	if discount := product.Discount; discount > 0 {
+		return discount
 	}
-	if price, ok := product["price"].(int32); ok {
-		return int(price)
-	}
-	return 0
+
+	return product.Price
 }

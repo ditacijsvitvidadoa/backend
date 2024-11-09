@@ -12,13 +12,13 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func GetProducts(client *mongo.Client, filters bson.M, pageNum, pageSize *int) ([]map[string]interface{}, error) {
+func GetProducts(client *mongo.Client, filters bson.M, pageNum, pageSize *int) ([]entities.Product, error) {
 	opts := storage.GeneralQueryOptions{
 		Filter:   filters,
 		PageNum:  pageNum,
 		PageSize: pageSize,
 	}
-	return storage.GeneralFind[map[string]interface{}](client, storage.Products, opts, false)
+	return storage.GeneralFind[entities.Product](client, storage.Products, opts, false)
 }
 
 func GetAll(client *mongo.Client, CollectionName string) ([]map[string]interface{}, error) {
@@ -88,7 +88,7 @@ func GetCartByUserID(client *mongo.Client, userID primitive.ObjectID) ([]entitie
 	return results[0].Cart, nil
 }
 
-func GetFavouritesByUserID(client *mongo.Client, userID primitive.ObjectID) ([]int32, error) {
+func GetFavouritesByUserID(client *mongo.Client, userID primitive.ObjectID) ([]string, error) {
 	opts := storage.GeneralQueryOptions{
 		Filter: bson.M{"_id": userID},
 	}

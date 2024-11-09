@@ -56,6 +56,9 @@ func (a *App) GetRouter() http.Handler {
 	r.HandleFunc("GET /api/get-archive-orders", a.GetArchiveOrders)
 	r.HandleFunc("DELETE /api/refresh-archive-order/{id}", a.RefreshArchiveOrder)
 
+	r.HandleFunc("GET /api/get-cities", a.GetAllCities)
+	r.HandleFunc("GET /api/get-postals/{city_ref}", a.GetPostalsFromCity)
+
 	return corsMiddleware(r)
 }
 

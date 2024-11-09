@@ -16,12 +16,12 @@ type Order struct {
 }
 
 type CourierPostalInfo struct {
-	Street    string `bson:"street" json:"street"`
-	House     string `bson:"house" json:"house"`
-	Apartment string `bson:"apartment" json:"apartment"`
-	Floor     string `bson:"floor" json:"floor"`
+	Street    string `bson:"Street" json:"street"`
+	House     string `bson:"House" json:"house"`
+	Apartment string `bson:"Apartment" json:"apartment"`
+	Floor     string `bson:"Floor" json:"floor"`
 }
 
 type BranchPostalInfo struct {
-	Branch string `bson:"branch" json:"branch"`
+	Branch string `bson:"Branch" json:"branch"`
 }

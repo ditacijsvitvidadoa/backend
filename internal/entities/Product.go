@@ -1,41 +1,44 @@
 package entities
 
 type Product struct {
-	Id              string            `bson:"id" json:"id"`
-	Articul         int               `bson:"articul" json:"articul"`
-	Code            int               `bson:"code" json:"code"`
-	ImageUrls       []string          `bson:"image_urls" json:"image_urls"`
-	Title           string            `bson:"title" json:"title"`
-	Description     string            `bson:"description" json:"description"`
-	Price           int               `bson:"price" json:"price"`
-	Discount        int               `bson:"discount" json:"discount"`
-	Category        string            `bson:"category" json:"category"`
-	Material        string            `bson:"material" json:"material"`
-	Brand           string            `bson:"brand" json:"brand"`
-	Age             string            `bson:"age" json:"age"`
-	InCart          bool              `json:"in_cart"`
-	IsFavourite     bool              `json:"is_favourite"`
-	Count           int               `bson:"count" json:"count"`
-	Sizes           *SizeInfo         `bson:"sizes,omitempty" json:"sizes,omitempty"`
-	Colors          *ColorInfo        `bson:"colors,omitempty" json:"colors,omitempty"`
-	Characteristics []*Characteristic `bson:"characteristics,omitempty" json:"characteristics,omitempty"`
+	Id              string            `bson:"Id" json:"id"`
+	Articul         int               `bson:"Articul" json:"articul"`
+	Code            int               `bson:"Code" json:"code"`
+	ImageUrls       []string          `bson:"Image_urls" json:"image_urls"`
+	Title           string            `bson:"Title" json:"title"`
+	Description     string            `bson:"Description" json:"description"`
+	Price           int               `bson:"Price" json:"price"`
+	Discount        int               `bson:"Discount" json:"discount"`
+	Category        string            `bson:"Category" json:"category"`
+	Material        string            `bson:"Material" json:"material"`
+	Brand           string            `bson:"Brand" json:"brand"`
+	Age             string            `bson:"Age" json:"age"`
+	InCart          bool              `bson:"InCart" json:"in_cart"`
+	IsFavourite     bool              `bson:"IsFavourite" json:"is_favourite"`
+	Count           int               `bson:"Count" json:"count"`
+	Sizes           *SizeInfo         `bson:"Sizes,omitempty" json:"sizes,omitempty"`
+	Colors          *ColorInfo        `bson:"Colors,omitempty" json:"colors,omitempty"`
+	Characteristics []*Characteristic `bson:"Characteristics,omitempty" json:"characteristics,omitempty"`
 }
 
 type SizeInfo struct {
-	Category string `bson:"category" json:"category"`
-	HasTable bool   `bson:"has_table" json:"has_table"`
-	Sizes    struct {
-		DefaultSize string   `bson:"default_size" json:"default_size"`
-		HasSizes    bool     `bson:"has_sizes" json:"has_sizes"`
-		SizeValues  []string `bson:"size_values" json:"size_values"`
-	} `bson:"sizes" json:"sizes"`
+	Category string `bson:"Category" json:"category"`
+	HasTable bool   `bson:"HasTable" json:"has_table"`
+	Sizes    Sizes  `bson:"Sizes" json:"sizes"`
+}
+
+type Sizes struct {
+	DefaultSize string   `bson:"DefaultSize" json:"default_size"`
+	HasSizes    bool     `bson:"HasSizes" json:"has_sizes"`
+	SizeValues  []string `bson:"sizeValues" json:"size_values"`
 }
 
 type ColorInfo struct {
-	Colors []string `bson:"colors" json:"colors"`
+	DefaultColor string   `bson:"DefaultColor" json:"default_color"`
+	Colors       []string `bson:"Colors" json:"colors"`
 }
 
 type Characteristic struct {
-	Key   string `bson:"key" json:"key"`
-	Value string `bson:"value" json:"value"`
+	Key   string `bson:"Key" json:"key"`
+	Value string `bson:"Value" json:"value"`
 }
