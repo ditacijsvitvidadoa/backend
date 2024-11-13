@@ -122,3 +122,47 @@ func IsEmailExists(client *mongo.Client, email string) (bool, error) {
 
 	return true, nil
 }
+
+func GetPurchaseHistory(client *mongo.Client, userId string) ([]entities.Order, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), storage.MongoDBTimeout)
+	defer cancel()
+
+	// Логирование для проверки userId и фильтра
+	fmt.Println("Retrieving purchase history for user:", userId)
+
+	filter := bson.M{"UserId": userId}
+
+	collection := client.Database(storage.MongoDBName).Collection(storage.Orders)
+
+	cursor, err := collection.Find(ctx, filter)
+	if err != nil {
+		// Логируем ошибку при выполнении запроса
+		fmt.Println("Error executing query:", err)
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var orders []entities.Order
+
+	for cursor.Next(ctx) {
+		var order entities.Order
+		if err = cursor.Decode(&order); err != nil {
+			// Логируем ошибку декодирования
+			fmt.Println("Error decoding order:", err)
+			return nil, err
+		}
+
+		orders = append(orders, order)
+	}
+
+	if err = cursor.Err(); err != nil {
+		// Логируем ошибку при обходе курсора
+		fmt.Println("Cursor error:", err)
+		return nil, err
+	}
+
+	// Логируем результат
+	fmt.Println("Retrieved orders:", orders)
+
+	return orders, nil
+}

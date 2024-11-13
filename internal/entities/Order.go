@@ -1,6 +1,9 @@
 package entities
 
+import "time"
+
 type Order struct {
+	OrderId       int         `bson:"OrderId" json:"order_id"`
 	Status        int         `bson:"Status" json:"status"`
 	UserId        string      `bson:"UserId" json:"user_id"`
 	FirstName     string      `bson:"FirstName" json:"firstName"`
@@ -13,6 +16,7 @@ type Order struct {
 	ReceivingType string      `bson:"ReceivingType" json:"receiving_type"`
 	PostalInfo    interface{} `bson:"PostalInfo" json:"postal_info"`
 	Products      []Product   `bson:"Products" json:"products"`
+	Date          time.Time   `bson:"Date,omitempty" json:"date"`
 }
 
 type CourierPostalInfo struct {

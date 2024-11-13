@@ -5,9 +5,11 @@ import (
 	"github.com/ditacijsvitvidadoa/backend/internal/cookie"
 	"github.com/ditacijsvitvidadoa/backend/internal/entities"
 	"github.com/ditacijsvitvidadoa/backend/internal/storage/requests"
+	"github.com/ditacijsvitvidadoa/backend/internal/utils"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"net/http"
 	"strconv"
+	"time"
 )
 
 func (a *App) AddOrder(w http.ResponseWriter, r *http.Request) {
@@ -25,7 +27,9 @@ func (a *App) AddOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Сохраняем время как time.Time
 	var order = entities.Order{
+		OrderId:       utils.GenerateRandomNumber(),
 		Status:        0,
 		FirstName:     firstName,
 		LastName:      lastName,
@@ -35,6 +39,7 @@ func (a *App) AddOrder(w http.ResponseWriter, r *http.Request) {
 		PostalType:    postalType,
 		City:          city,
 		ReceivingType: receivingType,
+		Date:          time.Now(), // сохраняем время как time.Time
 	}
 
 	if receivingType == "Branches" {

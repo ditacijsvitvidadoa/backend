@@ -207,7 +207,73 @@ func (a *App) checkAuthentication(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) PurchasesHistory(w http.ResponseWriter, r *http.Request) {
+	sessionValue, err := cookie.GetSessionValue(r, "session")
+	if err != nil {
+		sendError(w, http.StatusUnauthorized, "Unable to retrieve session value. Please ensure you are logged in.")
+		return
+	}
 
+	userId, err := cookie.GetUserIDFromCookie(sessionValue)
+	if err != nil {
+		sendError(w, http.StatusUnauthorized, "Failed to retrieve user ID from session cookie.")
+		return
+	}
+
+	orders, err := requests.GetPurchaseHistory(a.client, userId)
+	if err != nil {
+		sendError(w, http.StatusInternalServerError, "Failed to get purchase history")
+		return
+	}
+
+	var historyResponse []struct {
+		OrderDetails struct {
+			OrderId int    `json:"order_id"`
+			Date    string `json:"date"`
+			Status  string `json:"status"`
+		} `json:"order_details"`
+		Products []entities.Product `json:"products"`
+	}
+
+	for _, order := range orders {
+		status := getStatusText(order.Status)
+
+		responseItem := struct {
+			OrderDetails struct {
+				OrderId int    `json:"order_id"`
+				Date    string `json:"date"`
+				Status  string `json:"status"`
+			} `json:"order_details"`
+			Products []entities.Product `json:"products"`
+		}{
+			OrderDetails: struct {
+				OrderId int    `json:"order_id"`
+				Date    string `json:"date"`
+				Status  string `json:"status"`
+			}{
+				OrderId: order.OrderId,
+				Date:    order.Date.Format("2006-01-02"),
+				Status:  status,
+			},
+			Products: order.Products,
+		}
+
+		historyResponse = append(historyResponse, responseItem)
+	}
+
+	sendResponse(w, historyResponse)
+}
+
+func getStatusText(status int) string {
+	switch status {
+	case 0:
+		return "Не обработано"
+	case 1:
+		return "В процессе"
+	case 2:
+		return "Завершено"
+	default:
+		return "Неизвестно"
+	}
 }
 
 func (a *App) updateFirstName(w http.ResponseWriter, r *http.Request) {
