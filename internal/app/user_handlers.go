@@ -206,6 +206,10 @@ func (a *App) checkAuthentication(w http.ResponseWriter, r *http.Request) {
 	sendOk(w)
 }
 
+func (a *App) PurchasesHistory(w http.ResponseWriter, r *http.Request) {
+
+}
+
 func (a *App) updateFirstName(w http.ResponseWriter, r *http.Request) {
 	firstName := r.FormValue("firstname")
 

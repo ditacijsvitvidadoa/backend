@@ -41,6 +41,8 @@ func (a *App) GetRouter() http.Handler {
 	r.HandleFunc("POST /api/account-update/email", a.updateEmail)
 	r.HandleFunc("POST /api/account-update/password", a.updatePassword)
 
+	r.HandleFunc("GET /api/get-purchases-history", a.PurchasesHistory)
+
 	r.HandleFunc("DELETE /api/delete-cart-product/{id}", a.deleteCartProduct)
 	r.HandleFunc("PUT /api/add-product-to-cart/{id}", a.addCartProduct)
 
