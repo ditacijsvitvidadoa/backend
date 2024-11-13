@@ -22,6 +22,7 @@ var (
 		"puzzles", "outdoorToys", "artsAndCrafts",
 		"electronicToys", "musicalToys", "boardGames",
 	}
+	allowedSortOrders = []string{"popular", "ascending", "descending"}
 )
 
 func IsValidCategory(category string) bool {
@@ -84,4 +85,13 @@ func ExtractProductID(r *http.Request) (string, error) {
 	}
 
 	return productID, nil
+}
+
+func IsValidSortOrder(sortOrder string) bool {
+	for _, order := range allowedSortOrders {
+		if sortOrder == order {
+			return true
+		}
+	}
+	return false
 }

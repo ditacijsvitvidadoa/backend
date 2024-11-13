@@ -46,7 +46,7 @@ func (a *App) getCartProducts(w http.ResponseWriter, r *http.Request) {
 	}
 
 	filters := bson.M{"Id": bson.M{"$in": cartItemIDs}}
-	products, err := requests.GetProducts(a.client, filters, nil, nil)
+	products, err := requests.GetProducts(a.client, filters, nil, nil, nil)
 	if err != nil {
 		sendError(w, http.StatusNoContent, "Failed to retrieve products from storage.")
 		return

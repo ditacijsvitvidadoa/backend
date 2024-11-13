@@ -13,7 +13,9 @@ import (
 )
 
 func (a *App) GetAllCities(w http.ResponseWriter, r *http.Request) {
-	cities, err := cash.GetCitiesFromRedis(a.cash.Conn)
+	searchQuery := r.URL.Query().Get("search")
+
+	cities, err := cash.GetCitiesFromRedis(a.cash.Conn, searchQuery)
 	if err != nil {
 		sendError(w, http.StatusInternalServerError, err.Error())
 		return

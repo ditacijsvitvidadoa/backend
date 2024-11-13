@@ -11,6 +11,7 @@ import (
 	"github.com/ditacijsvitvidadoa/backend/internal/validators"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"log"
 	"net/http"
 	"strconv"
@@ -169,28 +170,44 @@ func (a *App) getProducts(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
+
 	filter, err := filters.BuildFilter(r)
 	if err != nil {
 		sendError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	fmt.Println(filter)
+	options := options.Find()
 
-	allProducts, err := requests.GetProducts(a.client, filter, nil, nil)
+	if err = filters.AddSortOrderFilter(r, filter, options); err != nil {
+		sendError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	fmt.Printf("Filter: %+v\n", filter)
+	fmt.Printf("Sort Options: %+v\n", options)
+
+	// Получаем все продукты без учета пагинации для проверки сортировки
+	allProducts, err := requests.GetProducts(a.client, filter, options, nil, nil)
 	if err != nil {
 		sendError(w, http.StatusInternalServerError, fmt.Sprintf("Error fetching all products: %s", err))
 		return
 	}
 
+	fmt.Printf("All Products Before Sorting: %+v\n", allProducts)
+
+	// Добавляем детали продуктов
 	details := buildProductDetails(allProducts)
 
+	// Параметры пагинации
 	pageNum, pageSize := filters.GetPaginationParams(r)
-	products, err := requests.GetProducts(a.client, filter, &pageNum, &pageSize)
+	products, err := requests.GetProducts(a.client, filter, options, &pageNum, &pageSize)
 	if err != nil {
 		sendError(w, http.StatusInternalServerError, fmt.Sprintf("Error fetching paginated products: %s", err))
 		return
 	}
+
+	fmt.Printf("Paginated Products After Sorting: %+v\n", products)
 
 	if userID != "" {
 		for i := range products {
@@ -225,7 +242,7 @@ func (a *App) getProductByID(w http.ResponseWriter, r *http.Request) {
 
 	filter := bson.M{"Id": productID}
 
-	products, err := requests.GetProducts(a.client, filter, nil, nil)
+	products, err := requests.GetProducts(a.client, filter, nil, nil, nil)
 	if err != nil {
 		sendError(w, http.StatusInternalServerError, fmt.Sprintf("Error fetching product: %s", err))
 		return

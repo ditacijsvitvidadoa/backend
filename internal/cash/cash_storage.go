@@ -6,6 +6,7 @@ import (
 	"github.com/ditacijsvitvidadoa/backend/internal/entities"
 	"github.com/gomodule/redigo/redis"
 	"log"
+	"strings"
 )
 
 func SaveSessionToRedis(redisClient redis.Conn, cookieSession, token string) error {
@@ -73,24 +74,49 @@ func DeleteSessionByToken(redisClient redis.Conn, token string) error {
 	return fmt.Errorf("session with token %s not found", token)
 }
 
-func GetCitiesFromRedis(redisClient redis.Conn) ([]entities.City, error) {
-	keys, err := redis.Strings(redisClient.Do("KEYS", "city.*"))
-	if err != nil {
-		return nil, fmt.Errorf("could not retrieve cities: %v", err)
-	}
+func GetCitiesFromRedis(redisClient redis.Conn, searchQuery string) ([]entities.City, error) {
 	var cities []entities.City
-	for _, key := range keys {
-		cityData, err := redis.Bytes(redisClient.Do("GET", key))
+	cursor := "0"
+
+	for {
+		reply, err := redis.Values(redisClient.Do("SCAN", cursor, "MATCH", "city.*"))
 		if err != nil {
-			log.Printf("Error getting data for key %s: %v", key, err)
-			continue
+			return nil, fmt.Errorf("could not retrieve cities: %v", err)
 		}
-		var city entities.City
-		if err := json.Unmarshal(cityData, &city); err != nil {
-			log.Printf("Error unmarshalling data for key %s: %v", key, err)
-			continue
+
+		var newCursor string
+		var keys []string
+		if _, err := redis.Scan(reply, &newCursor, &keys); err != nil {
+			return nil, fmt.Errorf("could not scan keys: %v", err)
 		}
-		cities = append(cities, city)
+
+		for _, key := range keys {
+			cityData, err := redis.Bytes(redisClient.Do("GET", key))
+			if err != nil {
+				log.Printf("Error getting data for key %s: %v", key, err)
+				continue
+			}
+
+			var city entities.City
+			if err := json.Unmarshal(cityData, &city); err != nil {
+				log.Printf("Error unmarshalling data for key %s: %v", key, err)
+				continue
+			}
+
+			if strings.Contains(strings.ToLower(city.Description), strings.ToLower(searchQuery)) {
+				cities = append(cities, city)
+			}
+		}
+
+		if newCursor == "0" {
+			break
+		}
+		cursor = newCursor
 	}
+
+	if len(cities) > 20 {
+		cities = cities[:20]
+	}
+
 	return cities, nil
 }

@@ -29,8 +29,6 @@ func (a *App) createUserAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Println("create account hash:", hashPassword)
-
 	isExists, err := requests.IsEmailExists(a.client, email)
 	if err != nil {
 		sendError(w, http.StatusInternalServerError, err.Error())
@@ -49,15 +47,14 @@ func (a *App) createUserAccount(w http.ResponseWriter, r *http.Request) {
 	}
 
 	newUser := entities.User{
-		UserID:            userID,
-		Password:          hashPassword,
-		FullName:          entities.FullName{FirstName: firstName, LastName: lastName, Patronymic: patronymic},
-		Phone:             phoneNumber,
-		Email:             email,
-		PostalServiceInfo: entities.PostalServiceInfo{},
-		MarketingConsent:  false,
-		Cart:              []entities.CartItem{},
-		Favourites:        []string{},
+		UserID:           userID,
+		Password:         hashPassword,
+		FullName:         entities.FullName{FirstName: firstName, LastName: lastName, Patronymic: patronymic},
+		Phone:            phoneNumber,
+		Email:            email,
+		MarketingConsent: false,
+		Cart:             []entities.CartItem{},
+		Favourites:       []string{},
 	}
 
 	_, err = requests.CreateNewUser(a.client, newUser)
@@ -94,22 +91,31 @@ func (a *App) getProfileInfo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var postalInfoArray []map[string]string
-	switch postalInfo := UserInfo.PostalServiceInfo.PostalInfo.(type) {
-	case map[string]interface{}:
-		for key, value := range postalInfo {
-			postalInfoArray = append(postalInfoArray, map[string]string{
-				"Key":   key,
-				"Value": value.(string),
-			})
+	// Отладочные сообщения
+	fmt.Println("User info retrieved:", UserInfo)
+
+	// Проверка на наличие PostalServiceInfo и PostalInfo
+	if UserInfo.PostalServiceInfo != nil && UserInfo.PostalServiceInfo.PostalInfo != nil {
+		var postalInfoArray []map[string]string
+		switch postalInfo := UserInfo.PostalServiceInfo.PostalInfo.(type) {
+		case map[string]interface{}:
+			for key, value := range postalInfo {
+				postalInfoArray = append(postalInfoArray, map[string]string{
+					"Key":   key,
+					"Value": value.(string),
+				})
+			}
+			UserInfo.PostalServiceInfo.PostalInfo = postalInfoArray
+		case string:
+			fmt.Println("PostalInfo is a string:", postalInfo)
+		default:
+			fmt.Println("Unknown type of PostalInfo")
 		}
-		UserInfo.PostalServiceInfo.PostalInfo = postalInfoArray
-	case string:
-		fmt.Println("PostalInfo is a string:", postalInfo)
-	default:
-		fmt.Println("Unknown type of PostalInfo")
+	} else {
+		fmt.Println("PostalServiceInfo or PostalInfo is nil")
 	}
 
+	// Отправка ответа
 	sendResponse(w, UserInfo)
 }
 
@@ -201,7 +207,12 @@ func (a *App) checkAuthentication(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) updateFirstName(w http.ResponseWriter, r *http.Request) {
-	firstName := r.FormValue("firstName")
+	firstName := r.FormValue("firstname")
+
+	if firstName == "" {
+		sendError(w, http.StatusBadRequest, "firstName is required")
+		return
+	}
 
 	sessionValue, err := cookie.GetSessionValue(r, "session")
 	if err != nil {
@@ -231,7 +242,12 @@ func (a *App) updateFirstName(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) updateLastName(w http.ResponseWriter, r *http.Request) {
-	lastName := r.FormValue("lastName")
+	lastName := r.FormValue("lastname")
+
+	if lastName == "" {
+		sendError(w, http.StatusBadRequest, "lastName is required")
+		return
+	}
 
 	sessionValue, err := cookie.GetSessionValue(r, "session")
 	if err != nil {
@@ -263,6 +279,11 @@ func (a *App) updateLastName(w http.ResponseWriter, r *http.Request) {
 func (a *App) updatePatronymic(w http.ResponseWriter, r *http.Request) {
 	patronymic := r.FormValue("patronymic")
 
+	if patronymic == "" {
+		sendError(w, http.StatusBadRequest, "patronymic is required")
+		return
+	}
+
 	sessionValue, err := cookie.GetSessionValue(r, "session")
 	if err != nil {
 		sendError(w, http.StatusUnauthorized, "Unable to retrieve session value. Please ensure you are logged in.")
@@ -291,7 +312,12 @@ func (a *App) updatePatronymic(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) updatePhoneNumber(w http.ResponseWriter, r *http.Request) {
-	phoneNumber := r.FormValue("phone-number")
+	phoneNumber := r.FormValue("phone")
+
+	if phoneNumber == "" {
+		sendError(w, http.StatusBadRequest, "phone-number is required")
+		return
+	}
 
 	sessionValue, err := cookie.GetSessionValue(r, "session")
 	if err != nil {
@@ -323,6 +349,11 @@ func (a *App) updatePhoneNumber(w http.ResponseWriter, r *http.Request) {
 func (a *App) updateEmail(w http.ResponseWriter, r *http.Request) {
 	Email := r.FormValue("email")
 
+	if Email == "" {
+		sendError(w, http.StatusBadRequest, "email is required")
+		return
+	}
+
 	sessionValue, err := cookie.GetSessionValue(r, "session")
 	if err != nil {
 		sendError(w, http.StatusUnauthorized, "Unable to retrieve session value. Please ensure you are logged in.")
@@ -352,6 +383,11 @@ func (a *App) updateEmail(w http.ResponseWriter, r *http.Request) {
 
 func (a *App) updatePassword(w http.ResponseWriter, r *http.Request) {
 	password := r.FormValue("password")
+
+	if password == "" {
+		sendError(w, http.StatusBadRequest, "password is required")
+		return
+	}
 
 	hashPassword, err := password2.Hash(password)
 	if err != nil {

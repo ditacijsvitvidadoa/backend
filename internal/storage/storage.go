@@ -26,6 +26,7 @@ type GeneralQueryOptions struct {
 	Projection bson.M
 	PageNum    *int
 	PageSize   *int
+	Sort       *options.FindOptions
 }
 
 func GeneralFind[T any](client *mongo.Client, collectionName string, opts GeneralQueryOptions, singleResult bool) ([]T, error) {

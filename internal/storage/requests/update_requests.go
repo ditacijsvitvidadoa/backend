@@ -29,14 +29,14 @@ func AddProductToCart(client *mongo.Client, userID primitive.ObjectID, update bs
 	return storage.GeneralUpdate[entities.User](client, storage.Users, filter, update)
 }
 
-func AddProductToFavourites(client *mongo.Client, userID primitive.ObjectID, productID int) (int64, error) {
+func AddProductToFavourites(client *mongo.Client, userID primitive.ObjectID, productID string) (int64, error) {
 	filter := bson.M{"_id": userID}
 	update := bson.M{"$addToSet": bson.M{"Favourites": productID}}
 
 	return storage.GeneralUpdate[entities.User](client, storage.Users, filter, update)
 }
 
-func RemoveProductFromFavourites(client *mongo.Client, userID primitive.ObjectID, productID int) (int64, error) {
+func RemoveProductFromFavourites(client *mongo.Client, userID primitive.ObjectID, productID string) (int64, error) {
 	filter := bson.M{"_id": userID}
 	update := bson.M{"$pull": bson.M{"Favourites": productID}}
 
@@ -48,7 +48,7 @@ func UpdateUserProfileField(client *mongo.Client, userID primitive.ObjectID, fie
 
 	update := bson.M{"$set": bson.M{fieldPath: newValue}}
 
-	modifiedCount, err := storage.GeneralUpdate[any](client, storage.Users, filter, update)
+	modifiedCount, err := storage.GeneralUpdate[entities.User](client, storage.Users, filter, update)
 	if err != nil {
 		return fmt.Errorf("could not update field %s: %v", fieldPath, err)
 	}

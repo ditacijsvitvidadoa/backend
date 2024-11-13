@@ -1,15 +1,15 @@
 package entities
 
 type User struct {
-	UserID            int               `bson:"Id" json:"id"`
-	Password          string            `bson:"Password" json:"password"`
-	FullName          FullName          `bson:"FullName" json:"full_name"`
-	Phone             string            `bson:"Phone" json:"phone"`
-	Email             string            `bson:"Email" json:"email"`
-	PostalServiceInfo PostalServiceInfo `bson:"PostalService" json:"postal_service"`
-	MarketingConsent  bool              `bson:"MarketingConsent" json:"marketing_consent"`
-	Cart              []CartItem        `bson:"Cart" json:"cart"`
-	Favourites        []string          `bson:"Favourites" json:"favourites"`
+	UserID            int                `bson:"Id" json:"id"`
+	Password          string             `bson:"Password" json:"password"`
+	FullName          FullName           `bson:"FullName" json:"full_name"`
+	Phone             string             `bson:"Phone" json:"phone"`
+	Email             string             `bson:"Email" json:"email"`
+	PostalServiceInfo *PostalServiceInfo `bson:"PostalService,omitempty" json:"postal_service,omitempty"`
+	MarketingConsent  bool               `bson:"MarketingConsent" json:"marketing_consent"`
+	Cart              []CartItem         `bson:"Cart" json:"cart"`
+	Favourites        []string           `bson:"Favourites" json:"favourites"`
 }
 
 type FullName struct {

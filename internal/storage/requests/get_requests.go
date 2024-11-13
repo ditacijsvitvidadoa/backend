@@ -10,14 +10,18 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func GetProducts(client *mongo.Client, filters bson.M, pageNum, pageSize *int) ([]entities.Product, error) {
+func GetProducts(client *mongo.Client, filters bson.M, options *options.FindOptions, pageNum, pageSize *int) ([]entities.Product, error) {
 	opts := storage.GeneralQueryOptions{
 		Filter:   filters,
+		Sort:     options,
 		PageNum:  pageNum,
 		PageSize: pageSize,
 	}
+	fmt.Printf("Filters: %+v\n", filters)
+	fmt.Printf("Options: %+v\n", options)
 	return storage.GeneralFind[entities.Product](client, storage.Products, opts, false)
 }
 

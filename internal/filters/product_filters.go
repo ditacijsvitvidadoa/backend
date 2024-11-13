@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/ditacijsvitvidadoa/backend/internal/validators"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -13,6 +14,9 @@ import (
 func BuildFilter(r *http.Request) (bson.M, error) {
 	filter := bson.M{}
 
+	if err := addDiscountAndPriceFilters(r, filter); err != nil {
+		return nil, err
+	}
 	if err := addCategoryFilter(r, filter); err != nil {
 		return nil, err
 	}
@@ -151,47 +155,48 @@ func addTypeFilter(r *http.Request, filter bson.M) error {
 	return nil
 }
 
-//func addDiscountAndPriceFilters(products []entities.Product, r *http.Request) ([]entities.Product, error) {
-//	minPriceStr := r.URL.Query().Get("minPrice")
-//	maxPriceStr := r.URL.Query().Get("maxPrice")
-//
-//	var minPrice, maxPrice int
-//	var err error
-//
-//	if minPriceStr != "" {
-//		minPrice, err = strconv.Atoi(minPriceStr)
-//		if err != nil {
-//			return nil, fmt.Errorf("Invalid minPrice: %s", minPriceStr)
-//		}
-//	}
-//
-//	if maxPriceStr != "" {
-//		maxPrice, err = strconv.Atoi(maxPriceStr)
-//		if err != nil {
-//			return nil, fmt.Errorf("Invalid maxPrice: %s", maxPriceStr)
-//		}
-//	}
-//
-//	var filteredProducts []entities.Product
-//	for _, product := range products {
-//		if product.Discount != nil && *product.Discount > 0 {
-//			discountedPrice := product.Price - (*product.Discount)
-//
-//			if (minPriceStr == "" || discountedPrice >= minPrice) &&
-//				(maxPriceStr == "" || discountedPrice <= maxPrice) {
-//				filteredProducts = append(filteredProducts, product)
-//			}
-//		} else {
-//			// Проверка на обычную цену
-//			if (minPriceStr == "" || product.Price >= minPrice) &&
-//				(maxPriceStr == "" || product.Price <= maxPrice) {
-//				filteredProducts = append(filteredProducts, product)
-//			}
-//		}
-//	}
-//
-//	return filteredProducts, nil
-//}
+func addDiscountAndPriceFilters(r *http.Request, filter bson.M) error {
+	minPriceStr := r.URL.Query().Get("minPrice")
+	maxPriceStr := r.URL.Query().Get("maxPrice")
+
+	fmt.Printf("minPriceStr: %s, maxPriceStr: %s\n", minPriceStr, maxPriceStr)
+
+	// Переменная для фильтра по цене
+	var priceFilters []bson.M
+	if minPriceStr != "" {
+		minPrice, err := strconv.Atoi(minPriceStr)
+		if err != nil {
+			return fmt.Errorf("invalid minPrice: %s", minPriceStr)
+		}
+		fmt.Printf("Parsed minPrice: %d\n", minPrice)
+		priceFilters = append(priceFilters, bson.M{
+			"$or": []interface{}{
+				bson.M{"Discount": bson.M{"$gte": minPrice, "$ne": 0}},
+				bson.M{"Price": bson.M{"$gte": minPrice}},
+			},
+		})
+	}
+
+	if maxPriceStr != "" {
+		maxPrice, err := strconv.Atoi(maxPriceStr)
+		if err != nil {
+			return fmt.Errorf("invalid maxPrice: %s", maxPriceStr)
+		}
+		fmt.Printf("Parsed maxPrice: %d\n", maxPrice)
+		priceFilters = append(priceFilters, bson.M{
+			"$or": []interface{}{
+				bson.M{"Discount": bson.M{"$lte": maxPrice, "$ne": 0}},
+				bson.M{"Price": bson.M{"$lte": maxPrice}},
+			},
+		})
+	}
+
+	if len(priceFilters) > 0 {
+		filter["$and"] = priceFilters
+	}
+
+	return nil
+}
 
 func GetPaginationParams(r *http.Request) (int, int) {
 	pageNum := 1
@@ -211,4 +216,34 @@ func GetPaginationParams(r *http.Request) (int, int) {
 	}
 
 	return pageNum, pageSize
+}
+
+func AddSortOrderFilter(r *http.Request, filter bson.M, options *options.FindOptions) error {
+	sortOrderParam := r.URL.Query().Get("sortOrder")
+
+	fmt.Printf("sortOrderParam: %s\n", sortOrderParam)
+
+	if sortOrderParam != "" {
+		if !validators.IsValidSortOrder(sortOrderParam) {
+			return fmt.Errorf("invalid sortOrder: %s", sortOrderParam)
+		}
+
+		var sortOrder bson.D
+		switch sortOrderParam {
+		case "ascending":
+			sortOrder = bson.D{{"Discount", -1}, {"Price", 1}}
+		case "descending":
+			sortOrder = bson.D{{"Discount", -1}, {"Price", -1}}
+		case "popular":
+			sortOrder = bson.D{{"Popularity", -1}}
+		default:
+			return fmt.Errorf("invalid sortOrder: %s", sortOrderParam)
+		}
+
+		fmt.Printf("sortOrder: %+v\n", sortOrder)
+		options.SetSort(sortOrder)
+		fmt.Printf("options after setting sort: %+v\n", options)
+	}
+
+	return nil
 }
