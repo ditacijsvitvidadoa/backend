@@ -49,24 +49,20 @@ func GeneralFind[T any](client *mongo.Client, collectionName string, opts Genera
 		return []T{result}, nil
 	}
 
+	findOptions := options.Find().SetProjection(opts.Projection)
+
+	if opts.Sort != nil {
+		findOptions.SetSort(opts.Sort.Sort)
+	}
+
+	// Pagination handling
 	if opts.PageNum != nil && opts.PageSize != nil {
 		skip := int64((*opts.PageNum - 1) * *opts.PageSize)
 		limit := int64(*opts.PageSize)
-
-		findOptions := options.Find().SetSkip(skip).SetLimit(limit).SetProjection(opts.Projection)
-		cursor, err := collection.Find(ctx, opts.Filter, findOptions)
-		if err != nil {
-			return nil, err
-		}
-		defer cursor.Close(ctx)
-
-		if err := cursor.All(ctx, &results); err != nil {
-			return nil, err
-		}
-		return results, nil
+		findOptions.SetSkip(skip).SetLimit(limit)
 	}
 
-	cursor, err := collection.Find(ctx, opts.Filter)
+	cursor, err := collection.Find(ctx, opts.Filter, findOptions)
 	if err != nil {
 		return nil, err
 	}

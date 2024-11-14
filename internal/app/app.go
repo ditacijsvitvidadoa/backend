@@ -40,6 +40,7 @@ func (a *App) GetRouter() http.Handler {
 	r.HandleFunc("POST /api/account-update/phone", a.updatePhoneNumber)
 	r.HandleFunc("POST /api/account-update/email", a.updateEmail)
 	r.HandleFunc("POST /api/account-update/password", a.updatePassword)
+	r.HandleFunc("POST /api/marketing-consent", a.updateMarketingConsent)
 
 	r.HandleFunc("GET /api/get-purchases-history", a.PurchasesHistory)
 

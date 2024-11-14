@@ -491,3 +491,48 @@ func (a *App) updatePassword(w http.ResponseWriter, r *http.Request) {
 
 	sendOk(w)
 }
+
+func (a *App) updateMarketingConsent(w http.ResponseWriter, r *http.Request) {
+	marketingConsent := r.FormValue("marketing-consent")
+	var marketingConsentBool bool
+
+	switch marketingConsent {
+	case "yes":
+		marketingConsentBool = true
+	case "no":
+		marketingConsentBool = false
+	default:
+		marketingConsentBool = false
+	}
+
+	if marketingConsent == "" {
+		sendError(w, http.StatusBadRequest, "marketingConsent is required")
+		return
+	}
+
+	sessionValue, err := cookie.GetSessionValue(r, "session")
+	if err != nil {
+		sendError(w, http.StatusUnauthorized, "Unable to retrieve session value. Please ensure you are logged in.")
+		return
+	}
+
+	userId, err := cookie.GetUserIDFromCookie(sessionValue)
+	if err != nil {
+		sendError(w, http.StatusUnauthorized, "Failed to retrieve user ID from session cookie.")
+		return
+	}
+
+	userObjectId, err := primitive.ObjectIDFromHex(userId)
+	if err != nil {
+		sendError(w, http.StatusUnauthorized, "Failed to retrieve user ID from session cookie.")
+		return
+	}
+
+	err = requests.UpdateUserProfileField(a.client, userObjectId, "MarketingConsent", marketingConsentBool)
+	if err != nil {
+		sendError(w, http.StatusInternalServerError, fmt.Sprintf("Error updating user profile: %s", err))
+		return
+	}
+
+	sendOk(w)
+}

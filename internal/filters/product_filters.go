@@ -14,6 +14,9 @@ import (
 func BuildFilter(r *http.Request) (bson.M, error) {
 	filter := bson.M{}
 
+	if err := buildSearchFilter(r, filter); err != nil {
+		return nil, err
+	}
 	if err := addDiscountAndPriceFilters(r, filter); err != nil {
 		return nil, err
 	}
@@ -34,6 +37,29 @@ func BuildFilter(r *http.Request) (bson.M, error) {
 	}
 
 	return filter, nil
+}
+
+func buildSearchFilter(r *http.Request, filter bson.M) error {
+	search := r.URL.Query().Get("search")
+
+	if search == "" {
+		return nil
+	}
+
+	searchFilter := bson.M{
+		"$or": []bson.M{
+			{"Title": bson.M{"$regex": search, "$options": "i"}},
+			{"Description": bson.M{"$regex": search, "$options": "i"}},
+		},
+	}
+
+	if existing, ok := filter["$or"]; ok {
+		filter["$or"] = append(existing.([]bson.M), searchFilter["$or"].([]bson.M)...)
+	} else {
+		filter["$or"] = searchFilter["$or"]
+	}
+
+	return nil
 }
 
 func addCategoryFilter(r *http.Request, filter bson.M) error {
@@ -221,8 +247,6 @@ func GetPaginationParams(r *http.Request) (int, int) {
 func AddSortOrderFilter(r *http.Request, filter bson.M, options *options.FindOptions) error {
 	sortOrderParam := r.URL.Query().Get("sortOrder")
 
-	fmt.Printf("sortOrderParam: %s\n", sortOrderParam)
-
 	if sortOrderParam != "" {
 		if !validators.IsValidSortOrder(sortOrderParam) {
 			return fmt.Errorf("invalid sortOrder: %s", sortOrderParam)
@@ -235,9 +259,9 @@ func AddSortOrderFilter(r *http.Request, filter bson.M, options *options.FindOpt
 		case "descending":
 			sortOrder = bson.D{{"Discount", -1}, {"Price", -1}}
 		case "popular":
-			sortOrder = bson.D{{"Popularity", -1}}
+			sortOrder = bson.D{}
 		default:
-			return fmt.Errorf("invalid sortOrder: %s", sortOrderParam)
+			sortOrder = bson.D{}
 		}
 
 		fmt.Printf("sortOrder: %+v\n", sortOrder)

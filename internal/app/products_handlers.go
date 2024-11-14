@@ -187,7 +187,6 @@ func (a *App) getProducts(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("Filter: %+v\n", filter)
 	fmt.Printf("Sort Options: %+v\n", options)
 
-	// Получаем все продукты без учета пагинации для проверки сортировки
 	allProducts, err := requests.GetProducts(a.client, filter, options, nil, nil)
 	if err != nil {
 		sendError(w, http.StatusInternalServerError, fmt.Sprintf("Error fetching all products: %s", err))
@@ -196,10 +195,8 @@ func (a *App) getProducts(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Printf("All Products Before Sorting: %+v\n", allProducts)
 
-	// Добавляем детали продуктов
 	details := buildProductDetails(allProducts)
 
-	// Параметры пагинации
 	pageNum, pageSize := filters.GetPaginationParams(r)
 	products, err := requests.GetProducts(a.client, filter, options, &pageNum, &pageSize)
 	if err != nil {
