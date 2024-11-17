@@ -27,7 +27,6 @@ func (a *App) AddOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Сохраняем время как time.Time
 	var order = entities.Order{
 		OrderId:       utils.GenerateRandomNumber(),
 		Status:        0,
@@ -39,7 +38,7 @@ func (a *App) AddOrder(w http.ResponseWriter, r *http.Request) {
 		PostalType:    postalType,
 		City:          city,
 		ReceivingType: receivingType,
-		Date:          time.Now(), // сохраняем время как time.Time
+		Date:          time.Now(),
 	}
 
 	if receivingType == "Branches" {

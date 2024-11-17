@@ -9,9 +9,10 @@ type Product struct {
 	Description     string            `bson:"Description" json:"description"`
 	Price           int               `bson:"Price" json:"price"`
 	Discount        int               `bson:"Discount" json:"discount"`
-	Category        string            `bson:"Category" json:"category"`
-	Material        string            `bson:"Material" json:"material"`
-	Brand           string            `bson:"Brand" json:"brand"`
+	Category        CategoryInfo      `bson:"Category" json:"category"`
+	Material        CategoryInfo      `bson:"Material" json:"material"`
+	Brand           CategoryInfo      `bson:"Brand" json:"brand"`
+	Type            CategoryInfo      `bson:"Type" json:"type"`
 	Age             string            `bson:"Age" json:"age"`
 	InCart          bool              `bson:"InCart" json:"in_cart"`
 	IsFavourite     bool              `bson:"IsFavourite" json:"is_favourite"`

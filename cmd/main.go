@@ -6,6 +6,7 @@ import (
 	"github.com/ditacijsvitvidadoa/backend/internal/app"
 	cash2 "github.com/ditacijsvitvidadoa/backend/internal/cash"
 	"github.com/ditacijsvitvidadoa/backend/internal/mongo_conn"
+	"github.com/ditacijsvitvidadoa/backend/internal/ticker"
 	"log"
 	"net/http"
 	"os"
@@ -32,6 +33,8 @@ func main() {
 
 	a := app.NewApp(client, cash)
 	router := a.GetRouter()
+
+	go ticker.GeneralTicker(client)
 
 	fmt.Println("Listening on port:", port)
 

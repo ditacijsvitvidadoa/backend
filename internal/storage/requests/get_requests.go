@@ -11,6 +11,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"log"
 )
 
 func GetProducts(client *mongo.Client, filters bson.M, options *options.FindOptions, pageNum, pageSize *int) ([]entities.Product, error) {
@@ -20,8 +21,6 @@ func GetProducts(client *mongo.Client, filters bson.M, options *options.FindOpti
 		PageNum:  pageNum,
 		PageSize: pageSize,
 	}
-	fmt.Printf("Filters: %+v\n", filters)
-	fmt.Printf("Options: %+v\n", options)
 	return storage.GeneralFind[entities.Product](client, storage.Products, opts, false)
 }
 
@@ -31,6 +30,59 @@ func GetAll(client *mongo.Client, CollectionName string) ([]map[string]interface
 	}
 
 	return storage.GeneralFind[map[string]interface{}](client, CollectionName, opts, false)
+}
+
+func GetFilters(client *mongo.Client) (*entities.FilterCategory, error) {
+	opts := storage.GeneralQueryOptions{
+		Filter: bson.M{},
+	}
+
+	results, err := storage.GeneralFind[map[string]interface{}](client, "Filters", opts, false)
+	if err != nil || len(results) == 0 {
+		return nil, err
+	}
+
+	var filters entities.FilterCategory
+	data, err := bson.Marshal(results[0])
+	if err != nil {
+		return nil, err
+	}
+
+	if err := bson.Unmarshal(data, &filters); err != nil {
+		return nil, err
+	}
+
+	return &filters, nil
+}
+
+func SaveFilters(client *mongo.Client, filters *entities.FilterCategory) error {
+	id, err := primitive.ObjectIDFromHex("673a33682cc4a3c5d9a66401")
+	if err != nil {
+		log.Println("Ошибка при преобразовании _id:", err)
+		return err
+	}
+
+	filter := bson.M{"_id": id}
+
+	log.Printf("Saving filters: %+v", filters)
+
+	update := bson.D{
+		{"$set", bson.D{
+			{"categories", filters.Categories},
+			{"age", filters.Age},
+			{"brand", filters.Brand},
+			{"material", filters.Material},
+			{"type", filters.Type},
+		}},
+	}
+
+	result, err := client.Database("DutyachiySvitDB").Collection("Filters").UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		return err
+	}
+
+	log.Printf("Matched %v documents and modified %v documents", result.MatchedCount, result.ModifiedCount)
+	return nil
 }
 
 func LogInAccount(client *mongo.Client, email, password string) (primitive.ObjectID, error) {

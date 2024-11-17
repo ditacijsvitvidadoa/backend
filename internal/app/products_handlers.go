@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/ditacijsvitvidadoa/backend/internal/cookie"
+	"github.com/ditacijsvitvidadoa/backend/internal/email_sender"
 	"github.com/ditacijsvitvidadoa/backend/internal/entities"
 	"github.com/ditacijsvitvidadoa/backend/internal/filters"
 	"github.com/ditacijsvitvidadoa/backend/internal/storage/requests"
@@ -25,6 +26,8 @@ func (a *App) CreateProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	fmt.Println(product)
+
 	objectId, err := requests.CreateNewProduct(a.client, product)
 	if err != nil {
 		sendError(w, http.StatusBadRequest, err.Error())
@@ -39,19 +42,21 @@ func (a *App) CreateProduct(w http.ResponseWriter, r *http.Request) {
 func collectProductData(r *http.Request) (entities.Product, error) {
 	productID := utils.GenerateUUID()
 
+	fmt.Println(productID)
+
 	title := r.FormValue("title")
 	if title == "" {
 		return entities.Product{}, errors.New("title is required")
 	}
 
 	articul, err := utils.ParseFormValueAsInt(r.FormValue("articul"))
-	if err != nil {
-		return entities.Product{}, fmt.Errorf("invalid articul: %v", err)
+	if err != nil || articul == 0 {
+		articul = -1
 	}
 
 	code, err := utils.ParseFormValueAsInt(r.FormValue("code"))
-	if err != nil {
-		return entities.Product{}, fmt.Errorf("invalid code: %v", err)
+	if err != nil || code == 0 {
+		code = -1
 	}
 
 	description := r.FormValue("description")
@@ -66,19 +71,46 @@ func collectProductData(r *http.Request) (entities.Product, error) {
 	}
 
 	category := r.FormValue("category")
+	fmt.Println("category" + category)
 	if category == "" {
 		return entities.Product{}, errors.New("category is required")
 	}
 
+	translatedCategory := utils.Transliterate(category)
+	translatedCategoryOption := entities.CategoryInfo{
+		LabelUA: category,
+		Value:   translatedCategory,
+	}
+
 	material := r.FormValue("material")
+	translatedMaterial := utils.Transliterate(material)
+	translatedMaterialOption := entities.CategoryInfo{
+		LabelUA: material,
+		Value:   translatedMaterial,
+	}
+
 	brand := r.FormValue("brand")
+	translatedBrand := utils.Transliterate(brand)
+	translatedBrandOption := entities.CategoryInfo{
+		LabelUA: brand,
+		Value:   translatedBrand,
+	}
+
+	typeStr := r.FormValue("type")
+	log.Println("typeStr", typeStr)
+	translatedType := utils.Transliterate(typeStr)
+	translatedTypeOption := entities.CategoryInfo{
+		LabelUA: typeStr,
+		Value:   translatedType,
+	}
+
 	age := r.FormValue("age")
 	inCart := r.FormValue("in_cart") == "false"
 	isFavourite := r.FormValue("is_favourite") == "false"
 
 	discount, err := utils.ParseFormValueAsInt(r.FormValue("discount"))
-	if err != nil {
-		return entities.Product{}, fmt.Errorf("invalid discount: %v", err)
+	if err != nil || discount <= 0 {
+		discount = 0
 	}
 
 	var sizeInfo *entities.SizeInfo
@@ -137,9 +169,10 @@ func collectProductData(r *http.Request) (entities.Product, error) {
 		Description:     description,
 		Price:           price,
 		ImageUrls:       imageURLs,
-		Category:        category,
-		Material:        material,
-		Brand:           brand,
+		Category:        translatedCategoryOption,
+		Material:        translatedMaterialOption,
+		Brand:           translatedBrandOption,
+		Type:            translatedTypeOption,
 		Age:             age,
 		InCart:          inCart,
 		IsFavourite:     isFavourite,
@@ -225,6 +258,14 @@ func (a *App) getProducts(w http.ResponseWriter, r *http.Request) {
 	}
 
 	sendResponse(w, response)
+
+	go func() {
+		err := email_sender.SendOrderConfirmation("vaniakraich@gmail.com", "Іван", "12345")
+		if err != nil {
+			sendError(w, http.StatusInternalServerError, fmt.Sprintf("Error sending order confirmation: %s", err))
+			return
+		}
+	}()
 }
 
 func (a *App) getProductByID(w http.ResponseWriter, r *http.Request) {
@@ -324,4 +365,14 @@ func getEffectivePrice(product entities.Product) int {
 	}
 
 	return product.Price
+}
+
+func (a *App) getProductsFilter(w http.ResponseWriter, r *http.Request) {
+	filtersData, err := requests.GetFilters(a.client)
+	if err != nil {
+		sendError(w, http.StatusInternalServerError, fmt.Sprintf("Error fetching filters: %s", err))
+		return
+	}
+
+	sendResponse(w, filtersData)
 }

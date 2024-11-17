@@ -28,6 +28,7 @@ func (a *App) GetRouter() http.Handler {
 	r.HandleFunc("GET /api/check-auth", a.checkAuthentication)
 	r.HandleFunc("GET /api/get-cart-products", a.getCartProducts)
 	r.HandleFunc("POST /api/create-product", a.CreateProduct)
+	r.HandleFunc("GET /api/get-products-filter", a.getProductsFilter)
 
 	r.HandleFunc("POST /api/login", a.logIn)
 	r.HandleFunc("GET /api/user-account", a.getProfileInfo)

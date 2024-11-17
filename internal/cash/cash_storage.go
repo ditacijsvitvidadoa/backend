@@ -77,9 +77,11 @@ func DeleteSessionByToken(redisClient redis.Conn, token string) error {
 func GetCitiesFromRedis(redisClient redis.Conn, searchQuery string) ([]entities.City, error) {
 	var cities []entities.City
 	cursor := "0"
+	searchQuery = strings.ToLower(searchQuery)
 
 	for {
-		reply, err := redis.Values(redisClient.Do("SCAN", cursor, "MATCH", "city.*"))
+		// Сканируем ключи с префиксом "city."
+		reply, err := redis.Values(redisClient.Do("SCAN", cursor, "MATCH", "city.*", "COUNT", 100))
 		if err != nil {
 			return nil, fmt.Errorf("could not retrieve cities: %v", err)
 		}
@@ -103,8 +105,12 @@ func GetCitiesFromRedis(redisClient redis.Conn, searchQuery string) ([]entities.
 				continue
 			}
 
-			if strings.Contains(strings.ToLower(city.Description), strings.ToLower(searchQuery)) {
+			if strings.Contains(strings.ToLower(city.Description), searchQuery) {
 				cities = append(cities, city)
+
+				if len(cities) >= 20 {
+					return cities, nil
+				}
 			}
 		}
 
@@ -112,10 +118,6 @@ func GetCitiesFromRedis(redisClient redis.Conn, searchQuery string) ([]entities.
 			break
 		}
 		cursor = newCursor
-	}
-
-	if len(cities) > 20 {
-		cities = cities[:20]
 	}
 
 	return cities, nil
