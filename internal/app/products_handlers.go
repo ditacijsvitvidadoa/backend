@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/ditacijsvitvidadoa/backend/internal/cookie"
-	"github.com/ditacijsvitvidadoa/backend/internal/email_sender"
 	"github.com/ditacijsvitvidadoa/backend/internal/entities"
 	"github.com/ditacijsvitvidadoa/backend/internal/filters"
 	"github.com/ditacijsvitvidadoa/backend/internal/storage/requests"
@@ -258,14 +257,6 @@ func (a *App) getProducts(w http.ResponseWriter, r *http.Request) {
 	}
 
 	sendResponse(w, response)
-
-	go func() {
-		err := email_sender.SendOrderConfirmation("vaniakraich@gmail.com", "Іван", "12345")
-		if err != nil {
-			sendError(w, http.StatusInternalServerError, fmt.Sprintf("Error sending order confirmation: %s", err))
-			return
-		}
-	}()
 }
 
 func (a *App) getProductByID(w http.ResponseWriter, r *http.Request) {

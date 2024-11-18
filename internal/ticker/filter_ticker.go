@@ -9,6 +9,10 @@ import (
 )
 
 func addUniqueCategory(categories []entities.CategoryInfo, category entities.CategoryInfo) []entities.CategoryInfo {
+	if category.Value == "" || category.LabelUA == "" {
+		return categories
+	}
+
 	for _, item := range categories {
 		if item.Value == category.Value {
 			return categories
@@ -19,14 +23,33 @@ func addUniqueCategory(categories []entities.CategoryInfo, category entities.Cat
 
 func updateFilters(products []entities.Product, filters *entities.FilterCategory) {
 	for _, product := range products {
-		filters.Categories.Items = addUniqueCategory(filters.Categories.Items, product.Category)
-
 		filters.Brand.Items = addUniqueCategory(filters.Brand.Items, product.Brand)
-
 		filters.Material.Items = addUniqueCategory(filters.Material.Items, product.Material)
-
 		filters.Type.Items = addUniqueCategory(filters.Type.Items, product.Type)
 	}
+
+	filters.Brand.Items = cleanUnusedFilterItems(filters.Brand.Items, products, func(p entities.Product) entities.CategoryInfo { return p.Brand })
+	filters.Material.Items = cleanUnusedFilterItems(filters.Material.Items, products, func(p entities.Product) entities.CategoryInfo { return p.Material })
+	filters.Type.Items = cleanUnusedFilterItems(filters.Type.Items, products, func(p entities.Product) entities.CategoryInfo { return p.Type })
+}
+
+func cleanUnusedFilterItems(filterItems []entities.CategoryInfo, products []entities.Product, extractFunc func(entities.Product) entities.CategoryInfo) []entities.CategoryInfo {
+	var validItems []entities.CategoryInfo
+
+	for _, filterItem := range filterItems {
+		found := false
+		for _, product := range products {
+			if extractFunc(product) == filterItem {
+				found = true
+				break
+			}
+		}
+		if found {
+			validItems = append(validItems, filterItem)
+		}
+	}
+
+	return validItems
 }
 
 func updateFiltersIfNecessary(client *mongo.Client) error {
@@ -35,7 +58,7 @@ func updateFiltersIfNecessary(client *mongo.Client) error {
 		return err
 	}
 
-	log.Println(currentFilters)
+	log.Println("Current Filters:", currentFilters)
 
 	if currentFilters == nil {
 		currentFilters = &entities.FilterCategory{
@@ -52,25 +75,13 @@ func updateFiltersIfNecessary(client *mongo.Client) error {
 		return err
 	}
 
-	log.Println(products)
-
-	initialFilters := *currentFilters
 	updateFilters(products, currentFilters)
 
-	log.Println(equalFilters(&initialFilters, currentFilters))
+	log.Println("Updated Filters:", currentFilters)
 
-	if !equalFilters(&initialFilters, currentFilters) {
-		if err = requests.SaveFilters(client, currentFilters); err != nil {
-			return err
-		}
+	if err = requests.SaveFilters(client, currentFilters); err != nil {
+		return err
 	}
 
 	return nil
-}
-
-func equalFilters(a, b *entities.FilterCategory) bool {
-	return len(a.Categories.Items) == len(b.Categories.Items) &&
-		len(a.Brand.Items) == len(b.Brand.Items) &&
-		len(a.Material.Items) == len(b.Material.Items) &&
-		len(a.Type.Items) == len(b.Type.Items)
 }

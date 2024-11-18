@@ -7,18 +7,20 @@ import (
 )
 
 func GeneralTicker(client *mongo.Client) {
-	ticker := time.NewTicker(5 * time.Second)
+	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
 
 	for {
 		select {
 		case <-ticker.C:
 			log.Println("ticker was started")
-			if err := updateFiltersIfNecessary(client); err != nil {
-				log.Println("Error to update filters: ", err.Error())
-				return
+			if err := updateFiltersIfNecessary(client); err == nil {
+				log.Println("Successfully updated filters")
+			} else {
+				log.Println("Failed to update filters")
 			}
-			log.Println("Successfully updated filters")
+
+			CounterTicker(client)
 		}
 	}
 }

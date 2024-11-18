@@ -97,3 +97,11 @@ func UpdateCartProductCount(client *mongo.Client, userID primitive.ObjectID, fil
 
 	return result.ModifiedCount, nil
 }
+
+func UpdateCounterValue(client *mongo.Client, counterID string, newValue int64) error {
+	filter := bson.M{"_id": counterID}
+	update := bson.M{"$set": bson.M{"sequence_value": newValue}}
+
+	_, err := storage.GeneralUpdate[interface{}](client, storage.Counters, filter, update)
+	return err
+}

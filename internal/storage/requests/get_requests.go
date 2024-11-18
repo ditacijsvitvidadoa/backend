@@ -179,7 +179,6 @@ func GetPurchaseHistory(client *mongo.Client, userId string) ([]entities.Order, 
 	ctx, cancel := context.WithTimeout(context.Background(), storage.MongoDBTimeout)
 	defer cancel()
 
-	// Логирование для проверки userId и фильтра
 	fmt.Println("Retrieving purchase history for user:", userId)
 
 	filter := bson.M{"UserId": userId}
@@ -188,7 +187,6 @@ func GetPurchaseHistory(client *mongo.Client, userId string) ([]entities.Order, 
 
 	cursor, err := collection.Find(ctx, filter)
 	if err != nil {
-		// Логируем ошибку при выполнении запроса
 		fmt.Println("Error executing query:", err)
 		return nil, err
 	}
@@ -199,7 +197,6 @@ func GetPurchaseHistory(client *mongo.Client, userId string) ([]entities.Order, 
 	for cursor.Next(ctx) {
 		var order entities.Order
 		if err = cursor.Decode(&order); err != nil {
-			// Логируем ошибку декодирования
 			fmt.Println("Error decoding order:", err)
 			return nil, err
 		}
@@ -208,13 +205,24 @@ func GetPurchaseHistory(client *mongo.Client, userId string) ([]entities.Order, 
 	}
 
 	if err = cursor.Err(); err != nil {
-		// Логируем ошибку при обходе курсора
 		fmt.Println("Cursor error:", err)
 		return nil, err
 	}
 
-	// Логируем результат
 	fmt.Println("Retrieved orders:", orders)
 
 	return orders, nil
+}
+
+func CountDocuments(client *mongo.Client, collectionName string) (int64, error) {
+	opts := storage.GeneralQueryOptions{
+		Filter: bson.M{},
+	}
+
+	docs, err := storage.GeneralFind[interface{}](client, collectionName, opts, false)
+	if err != nil {
+		return 0, err
+	}
+
+	return int64(len(docs)), nil
 }
