@@ -29,6 +29,7 @@ func (a *App) GetRouter() http.Handler {
 	r.HandleFunc("GET /api/get-cart-products", a.getCartProducts)
 	r.HandleFunc("POST /api/create-product", a.CreateProduct)
 	r.HandleFunc("GET /api/get-products-filter", a.getProductsFilter)
+	r.HandleFunc("PUT /api/update-product-analytics", a.updateProductAnalytics)
 
 	r.HandleFunc("POST /api/login", a.logIn)
 	r.HandleFunc("GET /api/user-account", a.getProfileInfo)
@@ -41,9 +42,12 @@ func (a *App) GetRouter() http.Handler {
 	r.HandleFunc("POST /api/account-update/phone", a.updatePhoneNumber)
 	r.HandleFunc("POST /api/account-update/email", a.updateEmail)
 	r.HandleFunc("POST /api/account-update/password", a.updatePassword)
+	r.HandleFunc("POST /api/update-postal-info", a.addOrUpdatePostalServiceInfo)
 	r.HandleFunc("POST /api/marketing-consent", a.updateMarketingConsent)
 
 	r.HandleFunc("GET /api/get-purchases-history", a.PurchasesHistory)
+
+	r.HandleFunc("POST /api/send-to-support", a.sendToSupport)
 
 	r.HandleFunc("DELETE /api/delete-cart-product/{id}", a.deleteCartProduct)
 	r.HandleFunc("PUT /api/add-product-to-cart/{id}", a.addCartProduct)
@@ -65,6 +69,9 @@ func (a *App) GetRouter() http.Handler {
 
 	r.HandleFunc("GET /api/get-cities", a.GetAllCities)
 	r.HandleFunc("GET /api/get-postals/{city_ref}", a.GetPostalsFromCity)
+
+	r.HandleFunc("POST /api/login-admin-panel", a.loginAdminPanel)
+	r.HandleFunc("GET /api/check-admin-auth", a.checkAdminSession)
 
 	return corsMiddleware(r)
 }

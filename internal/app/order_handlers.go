@@ -3,10 +3,12 @@ package app
 import (
 	"fmt"
 	"github.com/ditacijsvitvidadoa/backend/internal/cookie"
+	"github.com/ditacijsvitvidadoa/backend/internal/email_sender"
 	"github.com/ditacijsvitvidadoa/backend/internal/entities"
 	"github.com/ditacijsvitvidadoa/backend/internal/storage/requests"
 	"github.com/ditacijsvitvidadoa/backend/internal/utils"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -29,7 +31,7 @@ func (a *App) AddOrder(w http.ResponseWriter, r *http.Request) {
 
 	var order = entities.Order{
 		OrderId:       utils.GenerateRandomNumber(),
-		Status:        0,
+		Status:        1,
 		FirstName:     firstName,
 		LastName:      lastName,
 		Patronymic:    patronymic,
@@ -71,6 +73,15 @@ func (a *App) AddOrder(w http.ResponseWriter, r *http.Request) {
 
 		priceStr := r.FormValue(fmt.Sprintf("products[%d][Price]", i))
 		discountStr := r.FormValue(fmt.Sprintf("products[%d][Discount]", i))
+		countStr := r.FormValue(fmt.Sprintf("products[%d][Count]", i))
+
+		log.Println("countStr", countStr)
+
+		count, err := strconv.Atoi(countStr)
+		if err != nil {
+			sendError(w, http.StatusBadRequest, "invalid count")
+			return
+		}
 
 		price, err := strconv.Atoi(priceStr)
 		if err != nil {
@@ -91,6 +102,7 @@ func (a *App) AddOrder(w http.ResponseWriter, r *http.Request) {
 			Price:     price,
 			Discount:  discount,
 			ImageUrls: imageUrls,
+			Count:     count,
 		})
 	}
 	order.Products = products
@@ -110,6 +122,8 @@ func (a *App) AddOrder(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("err", err)
 	}
 
+	log.Println("order", order)
+
 	orderId, err := requests.CreateNewOrder(a.client, order)
 	if err != nil {
 		sendError(w, http.StatusInternalServerError, err.Error())
@@ -117,6 +131,11 @@ func (a *App) AddOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Println(orderId)
+
+	go func() {
+		email_sender.SendOrderConfirmation(order.Email, order.FirstName, order.OrderId)
+	}()
+
 	sendOk(w)
 }
 

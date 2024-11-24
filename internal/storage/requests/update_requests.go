@@ -98,10 +98,84 @@ func UpdateCartProductCount(client *mongo.Client, userID primitive.ObjectID, fil
 	return result.ModifiedCount, nil
 }
 
+func AddOrUpdatePostalServiceInfo(client *mongo.Client, userID primitive.ObjectID, postalServiceInfo entities.PostalServiceInfo) error {
+	collectionName := storage.Users
+	filter := bson.M{"_id": userID}
+
+	update := bson.M{
+		"$set": bson.M{
+			"PostalService.PostalType":    postalServiceInfo.PostalType,
+			"PostalService.City":          postalServiceInfo.City,
+			"PostalService.CityRef":       postalServiceInfo.CityRef,
+			"PostalService.ReceivingType": postalServiceInfo.ReceivingType,
+			"PostalService.PostalInfo":    postalServiceInfo.PostalInfo,
+		},
+	}
+
+	modifiedCount, err := storage.GeneralUpdate[interface{}](client, collectionName, filter, update)
+	if err != nil {
+		return fmt.Errorf("failed to update postal service info: %w", err)
+	}
+
+	if modifiedCount == 0 {
+		newDocument := bson.M{
+			"_id":               userID,
+			"PostalServiceInfo": postalServiceInfo,
+		}
+
+		_, err := storage.GeneralInsert[interface{}](client, collectionName, newDocument)
+		if err != nil {
+			return fmt.Errorf("failed to insert new postal service info: %w", err)
+		}
+	}
+
+	return nil
+}
+
 func UpdateCounterValue(client *mongo.Client, counterID string, newValue int64) error {
 	filter := bson.M{"_id": counterID}
 	update := bson.M{"$set": bson.M{"sequence_value": newValue}}
 
 	_, err := storage.GeneralUpdate[interface{}](client, storage.Counters, filter, update)
 	return err
+}
+
+func UpdateOrCreateProductAnalytics(client *mongo.Client, productId string, field string, increment int) error {
+	filter := bson.M{"ProductId": productId}
+	existingAnalytics, err := storage.GeneralFind[entities.ProductActivity](client, storage.ProductsActivities, storage.GeneralQueryOptions{
+		Filter: filter,
+	}, false)
+	if err != nil {
+		return fmt.Errorf("error fetching product analytics: %w", err)
+	}
+
+	if len(existingAnalytics) > 0 {
+		update := bson.M{
+			"$inc": bson.M{field: increment},
+		}
+		modifiedCount, err := storage.GeneralUpdate[any](client, storage.ProductsActivities, filter, update)
+		if err != nil {
+			return fmt.Errorf("error updating analytics: %w", err)
+		}
+		if modifiedCount == 0 {
+			return fmt.Errorf("no documents updated")
+		}
+		return nil
+	}
+
+	newDocument := bson.M{
+		"ProductId":   productId,
+		"Sales":       0,
+		"Clicks":      0,
+		"AddedToCart": 0,
+		"Favourites":  0,
+		field:         increment,
+	}
+
+	_, err = storage.GeneralInsert(client, storage.ProductsActivities, newDocument)
+	if err != nil {
+		return fmt.Errorf("error inserting new analytics document: %w", err)
+	}
+
+	return nil
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/ditacijsvitvidadoa/backend/internal/cash"
 	"github.com/ditacijsvitvidadoa/backend/internal/cookie"
+	"github.com/ditacijsvitvidadoa/backend/internal/email_sender"
 	"github.com/ditacijsvitvidadoa/backend/internal/entities"
 	"github.com/ditacijsvitvidadoa/backend/internal/storage/requests"
 	"github.com/ditacijsvitvidadoa/backend/internal/utils"
@@ -166,21 +167,42 @@ func (a *App) logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	parts := strings.Split(cookieValue, " ")
+	parts := strings.Split(cookieValue, "|")
 	if len(parts) != 2 {
 		sendError(w, http.StatusUnauthorized, "Invalid cookie format")
 		return
 	}
 
-	tokenPart := parts[1]
+	var userId, token string
+	for _, part := range parts {
+		keyValue := strings.Split(part, "=")
+		if len(keyValue) != 2 {
+			sendError(w, http.StatusUnauthorized, "Invalid key-value format in cookie")
+			return
+		}
 
-	tokenParts := strings.Split(tokenPart, "=")
-	if len(tokenParts) != 2 || tokenParts[0] != "token" {
-		sendError(w, http.StatusUnauthorized, "Invalid token format")
+		switch keyValue[0] {
+		case "userId":
+			userId = keyValue[1]
+		case "token":
+			token = keyValue[1]
+		default:
+			sendError(w, http.StatusUnauthorized, "Unexpected key in cookie")
+			return
+		}
+	}
+
+	if token == "" {
+		sendError(w, http.StatusUnauthorized, "Token not found in cookie")
 		return
 	}
 
-	err = cash.DeleteSessionByToken(a.cash.Conn, tokenParts[1])
+	if userId == "" {
+		sendError(w, http.StatusUnauthorized, "User ID not found in cookie")
+		return
+	}
+
+	err = cash.DeleteSessionByToken(a.cash.Conn, token)
 	if err != nil {
 		sendError(w, http.StatusInternalServerError, fmt.Sprintf("Error deleting session: %s", err))
 		return
@@ -533,6 +555,103 @@ func (a *App) updateMarketingConsent(w http.ResponseWriter, r *http.Request) {
 		sendError(w, http.StatusInternalServerError, fmt.Sprintf("Error updating user profile: %s", err))
 		return
 	}
+
+	sendOk(w)
+}
+
+func (a *App) addOrUpdatePostalServiceInfo(w http.ResponseWriter, r *http.Request) {
+	postalType := r.FormValue("postal_type")
+	city := r.FormValue("city")
+	cityRef := r.FormValue("city_ref")
+	receivingType := r.FormValue("receiving_type")
+
+	if postalType == "" || city == "" || cityRef == "" || receivingType == "" {
+		sendError(w, http.StatusBadRequest, "All fields are required.")
+		return
+	}
+
+	var postalInfo interface{}
+
+	if receivingType == "Branches" {
+		postalInfoValue := r.FormValue("postal_info")
+		log.Println(postalInfoValue)
+		if postalInfoValue == "" {
+			sendError(w, http.StatusBadRequest, "postal_info is required for Branches.")
+			return
+		}
+		postalInfo = postalInfoValue
+	} else if receivingType == "Courier" {
+		street := r.FormValue("street")
+		house := r.FormValue("house")
+		apartment := r.FormValue("apartment")
+		floor := r.FormValue("floor")
+		log.Println(street, house, apartment, floor)
+
+		if street == "" || house == "" {
+			sendError(w, http.StatusBadRequest, "street, house are required for Courier.")
+			return
+		}
+
+		postalInfo = map[string]string{
+			"street":    street,
+			"house":     house,
+			"apartment": apartment,
+			"floor":     floor,
+		}
+	} else {
+		sendError(w, http.StatusBadRequest, "Invalid receiving_type. Must be 'Branches' or 'Courier'.")
+		return
+	}
+
+	sessionValue, err := cookie.GetSessionValue(r, "session")
+	if err != nil {
+		sendError(w, http.StatusUnauthorized, "Unable to retrieve session value. Please ensure you are logged in.")
+		return
+	}
+
+	userId, err := cookie.GetUserIDFromCookie(sessionValue)
+	if err != nil {
+		sendError(w, http.StatusUnauthorized, "Failed to retrieve user ID from session cookie.")
+		return
+	}
+
+	userObjectId, err := primitive.ObjectIDFromHex(userId)
+	if err != nil {
+		sendError(w, http.StatusUnauthorized, "Failed to retrieve user ID from session cookie.")
+		return
+	}
+
+	postalServiceInfo := entities.PostalServiceInfo{
+		PostalType:    postalType,
+		City:          city,
+		CityRef:       cityRef,
+		ReceivingType: receivingType,
+		PostalInfo:    postalInfo,
+	}
+
+	err = requests.AddOrUpdatePostalServiceInfo(a.client, userObjectId, postalServiceInfo)
+	if err != nil {
+		sendError(w, http.StatusInternalServerError, fmt.Sprintf("Error adding or updating postal service info: %s", err))
+		return
+	}
+
+	sendOk(w)
+}
+
+func (a *App) sendToSupport(w http.ResponseWriter, r *http.Request) {
+	Name := r.FormValue("Name")
+	Email := r.FormValue("Email")
+	Phone := r.FormValue("Phone")
+	Title := r.FormValue("Title")
+	Description := r.FormValue("Description")
+
+	go func() {
+		err := email_sender.SendSupportQuestion(Name, Email, Phone, Title, Description)
+		if err != nil {
+			sendError(w, http.StatusInternalServerError, fmt.Sprintf("Error sending support question: %s", err))
+			return
+		}
+	}()
 
 	sendOk(w)
 }

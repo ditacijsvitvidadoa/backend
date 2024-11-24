@@ -14,6 +14,10 @@ import (
 	"log"
 )
 
+var (
+	ErrInvalidCredentials = errors.New("invalid credentials")
+)
+
 func GetProducts(client *mongo.Client, filters bson.M, options *options.FindOptions, pageNum, pageSize *int) ([]entities.Product, error) {
 	opts := storage.GeneralQueryOptions{
 		Filter:   filters,
@@ -225,4 +229,25 @@ func CountDocuments(client *mongo.Client, collectionName string) (int64, error) 
 	}
 
 	return int64(len(docs)), nil
+}
+
+func ValidateAdminCredentials(client *mongo.Client, email, password, phone string) (bool, error) {
+	filter := bson.M{
+		"Email":    email,
+		"Password": password,
+		"Phone":    phone,
+	}
+
+	results, err := storage.GeneralFind[entities.AdminCredentials](client, storage.AdminAccounts, storage.GeneralQueryOptions{
+		Filter: filter,
+	}, true)
+	if err != nil {
+		return false, err
+	}
+
+	if len(results) == 0 {
+		return false, ErrInvalidCredentials
+	}
+
+	return true, nil
 }

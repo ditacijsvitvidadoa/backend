@@ -5,6 +5,7 @@ import (
 	"github.com/ditacijsvitvidadoa/backend/internal/validators"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"log"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -35,8 +36,35 @@ func BuildFilter(r *http.Request) (bson.M, error) {
 	if err := addTypeFilter(r, filter); err != nil {
 		return nil, err
 	}
+	if err := buildDiscountFilter(r, filter); err != nil {
+		return nil, err
+	}
 
 	return filter, nil
+}
+
+func buildDiscountFilter(r *http.Request, filter bson.M) error {
+	discount := r.URL.Query().Get("discount")
+
+	log.Println(discount)
+
+	if discount != "with-discount" {
+		return nil
+	}
+
+	discountFilter := bson.M{
+		"Discount": bson.M{"$gt": 0},
+	}
+
+	if existing, ok := filter["Discount"]; ok {
+		filter["Discount"] = bson.M{
+			"$and": []bson.M{existing.(bson.M), discountFilter},
+		}
+	} else {
+		filter["Discount"] = discountFilter
+	}
+
+	return nil
 }
 
 func buildSearchFilter(r *http.Request, filter bson.M) error {
@@ -74,15 +102,11 @@ func addCategoryFilter(r *http.Request, filter bson.M) error {
 
 		for _, category := range categories {
 			category = strings.TrimSpace(category)
-			if validators.IsValidCategory(category) {
-				validCategories = append(validCategories, category)
-			} else {
-				return fmt.Errorf("invalid category: %s", category)
-			}
+			validCategories = append(validCategories, category)
 		}
 
 		if len(validCategories) > 0 {
-			filter["Category"] = bson.M{"$in": validCategories}
+			filter["Category.value"] = bson.M{"$in": validCategories}
 		}
 	}
 
@@ -107,7 +131,7 @@ func addAgeFilter(r *http.Request, filter bson.M) error {
 			validAges = append(validAges, age)
 		}
 
-		filter["age"] = bson.M{"$in": validAges}
+		filter["Age"] = bson.M{"$in": validAges}
 	}
 	return nil
 }
@@ -124,13 +148,10 @@ func addBrandFilter(r *http.Request, filter bson.M) error {
 
 		for _, brand := range brands {
 			brand = strings.TrimSpace(brand)
-			if !validators.IsValidBrand(brand) {
-				return fmt.Errorf("invalid brand: %s", brand)
-			}
 			validBrands = append(validBrands, brand)
 		}
 
-		filter["brand"] = bson.M{"$in": validBrands}
+		filter["Brand.value"] = bson.M{"$in": validBrands}
 	}
 	return nil
 }
@@ -147,13 +168,10 @@ func addMaterialFilter(r *http.Request, filter bson.M) error {
 
 		for _, material := range materials {
 			material = strings.TrimSpace(material)
-			if !validators.IsValidMaterial(material) {
-				return fmt.Errorf("invalid material: %s", material)
-			}
 			validMaterials = append(validMaterials, material)
 		}
 
-		filter["material"] = bson.M{"$in": validMaterials}
+		filter["Material.value"] = bson.M{"$in": validMaterials}
 	}
 	return nil
 }
@@ -170,13 +188,10 @@ func addTypeFilter(r *http.Request, filter bson.M) error {
 
 		for _, productType := range types {
 			productType = strings.TrimSpace(productType)
-			if !validators.IsValidType(productType) {
-				return fmt.Errorf("invalid type: %s", productType)
-			}
 			validTypes = append(validTypes, productType)
 		}
 
-		filter["type"] = bson.M{"$in": validTypes}
+		filter["Type.value"] = bson.M{"$in": validTypes}
 	}
 	return nil
 }

@@ -14,11 +14,13 @@ var (
 	MongoDBName    = "DutyachiySvitDB"
 	MongoDBTimeout = 10 * time.Second
 
-	Users         = "Users"
-	Products      = "Products"
-	Counters      = "Counters"
-	Orders        = "Orders"
-	ArchiveOrders = "ArchiveOrders"
+	Users              = "Users"
+	Products           = "Products"
+	Counters           = "Counters"
+	Orders             = "Orders"
+	ArchiveOrders      = "ArchiveOrders"
+	AdminAccounts      = "AdminAccounts"
+	ProductsActivities = "ProductsActivities"
 )
 
 type GeneralQueryOptions struct {
@@ -55,7 +57,6 @@ func GeneralFind[T any](client *mongo.Client, collectionName string, opts Genera
 		findOptions.SetSort(opts.Sort.Sort)
 	}
 
-	// Pagination handling
 	if opts.PageNum != nil && opts.PageSize != nil {
 		skip := int64((*opts.PageNum - 1) * *opts.PageSize)
 		limit := int64(*opts.PageSize)

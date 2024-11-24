@@ -25,8 +25,6 @@ func (a *App) CreateProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Println(product)
-
 	objectId, err := requests.CreateNewProduct(a.client, product)
 	if err != nil {
 		sendError(w, http.StatusBadRequest, err.Error())
@@ -209,6 +207,8 @@ func (a *App) getProducts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	log.Println("filter", filter)
+
 	options := options.Find()
 
 	if err = filters.AddSortOrderFilter(r, filter, options); err != nil {
@@ -216,16 +216,11 @@ func (a *App) getProducts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Printf("Filter: %+v\n", filter)
-	fmt.Printf("Sort Options: %+v\n", options)
-
 	allProducts, err := requests.GetProducts(a.client, filter, options, nil, nil)
 	if err != nil {
 		sendError(w, http.StatusInternalServerError, fmt.Sprintf("Error fetching all products: %s", err))
 		return
 	}
-
-	fmt.Printf("All Products Before Sorting: %+v\n", allProducts)
 
 	details := buildProductDetails(allProducts)
 
@@ -235,8 +230,6 @@ func (a *App) getProducts(w http.ResponseWriter, r *http.Request) {
 		sendError(w, http.StatusInternalServerError, fmt.Sprintf("Error fetching paginated products: %s", err))
 		return
 	}
-
-	fmt.Printf("Paginated Products After Sorting: %+v\n", products)
 
 	if userID != "" {
 		for i := range products {
@@ -366,4 +359,29 @@ func (a *App) getProductsFilter(w http.ResponseWriter, r *http.Request) {
 	}
 
 	sendResponse(w, filtersData)
+}
+
+func (a *App) updateProductAnalytics(w http.ResponseWriter, r *http.Request) {
+	productId := r.FormValue("product_id")
+	field := r.FormValue("field")
+	incrementStr := r.FormValue("increment")
+
+	if productId == "" || field == "" || incrementStr == "" {
+		http.Error(w, "Missing required fields: product_id, field, or increment", http.StatusBadRequest)
+		return
+	}
+
+	increment, err := strconv.Atoi(incrementStr)
+	if err != nil || increment == 0 {
+		http.Error(w, "Invalid increment value, must be a non-zero number", http.StatusBadRequest)
+		return
+	}
+
+	err = requests.UpdateOrCreateProductAnalytics(a.client, productId, field, increment)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to update analytics: %s", err), http.StatusInternalServerError)
+		return
+	}
+
+	sendOk(w)
 }

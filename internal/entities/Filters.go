@@ -16,4 +16,5 @@ type FilterCategory struct {
 	Brand      Filter `json:"brand"`
 	Material   Filter `json:"material"`
 	Type       Filter `json:"type"`
+	Discount   Filter `json:"discount"`
 }
