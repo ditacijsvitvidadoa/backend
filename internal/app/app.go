@@ -2,6 +2,7 @@ package app
 
 import (
 	"github.com/ditacijsvitvidadoa/backend/internal/cash"
+	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/mongo"
 	"net/http"
 )
@@ -21,73 +22,70 @@ func NewApp(client *mongo.Client, cash *cash.RedisClient) *App {
 }
 
 func (a *App) GetRouter() http.Handler {
-	r := http.NewServeMux()
+	r := mux.NewRouter()
 
-	r.HandleFunc("GET /api/get-products", a.getProducts)
-	r.HandleFunc("GET /api/get-product/{id}", a.getProductByID)
-	r.HandleFunc("GET /api/check-auth", a.checkAuthentication)
-	r.HandleFunc("GET /api/get-cart-products", a.getCartProducts)
-	r.HandleFunc("POST /api/create-product", a.CreateProduct)
-	r.HandleFunc("GET /api/get-products-filter", a.getProductsFilter)
-	r.HandleFunc("PUT /api/update-product-analytics", a.updateProductAnalytics)
+	r.HandleFunc("/api/get-products", a.getProducts).Methods("GET")
+	r.HandleFunc("/api/get-product/{id}", a.getProductByID).Methods("GET")
+	r.HandleFunc("/api/check-auth", a.checkAuthentication).Methods("GET")
+	r.HandleFunc("/api/get-cart-products", a.getCartProducts).Methods("GET")
+	r.HandleFunc("/api/create-product", a.CreateProduct).Methods("POST")
+	r.HandleFunc("/api/get-products-filter", a.getProductsFilter).Methods("GET")
+	r.HandleFunc("/api/update-product-analytics", a.updateProductAnalytics).Methods("PUT")
 
-	r.HandleFunc("POST /api/login", a.logIn)
-	r.HandleFunc("GET /api/user-account", a.getProfileInfo)
-	r.HandleFunc("POST /api/create-account", a.createUserAccount)
-	r.HandleFunc("POST /api/logout", a.logout)
+	r.HandleFunc("/api/login", a.logIn).Methods("POST")
+	r.HandleFunc("/api/user-account", a.getProfileInfo).Methods("GET")
+	r.HandleFunc("/api/create-account", a.createUserAccount).Methods("POST")
+	r.HandleFunc("/api/logout", a.logout).Methods("POST")
 
-	r.HandleFunc("POST /api/account-update/firstname", a.updateFirstName)
-	r.HandleFunc("POST /api/account-update/lastname", a.updateLastName)
-	r.HandleFunc("POST /api/account-update/patronymic", a.updatePatronymic)
-	r.HandleFunc("POST /api/account-update/phone", a.updatePhoneNumber)
-	r.HandleFunc("POST /api/account-update/email", a.updateEmail)
-	r.HandleFunc("POST /api/account-update/password", a.updatePassword)
-	r.HandleFunc("POST /api/update-postal-info", a.addOrUpdatePostalServiceInfo)
-	r.HandleFunc("POST /api/marketing-consent", a.updateMarketingConsent)
+	r.HandleFunc("/api/account-update/firstname", a.updateFirstName).Methods("POST")
+	r.HandleFunc("/api/account-update/lastname", a.updateLastName).Methods("POST")
+	r.HandleFunc("/api/account-update/patronymic", a.updatePatronymic).Methods("POST")
+	r.HandleFunc("/api/account-update/phone", a.updatePhoneNumber).Methods("POST")
+	r.HandleFunc("/api/account-update/email", a.updateEmail).Methods("POST")
+	r.HandleFunc("/api/account-update/password", a.updatePassword).Methods("POST")
+	r.HandleFunc("/api/update-postal-info", a.addOrUpdatePostalServiceInfo).Methods("POST")
+	r.HandleFunc("/api/marketing-consent", a.updateMarketingConsent).Methods("POST")
 
-	r.HandleFunc("GET /api/get-purchases-history", a.PurchasesHistory)
+	r.HandleFunc("/api/get-purchases-history", a.PurchasesHistory).Methods("GET")
 
-	r.HandleFunc("POST /api/send-to-support", a.sendToSupport)
+	r.HandleFunc("/api/send-to-support", a.sendToSupport).Methods("POST")
 
-	r.HandleFunc("DELETE /api/delete-cart-product/{id}", a.deleteCartProduct)
-	r.HandleFunc("PUT /api/add-product-to-cart/{id}", a.addCartProduct)
+	r.HandleFunc("/api/delete-cart-product/{id}", a.deleteCartProduct).Methods("DELETE")
+	r.HandleFunc("/api/add-product-to-cart/{id}", a.addCartProduct).Methods("PUT")
 
-	r.HandleFunc("PUT /api/update-cart-product-count", a.UpdateCount)
+	r.HandleFunc("/api/update-cart-product-count", a.UpdateCount).Methods("PUT")
 
-	r.HandleFunc("GET /api/get-favoutires-products", a.GetFavouritesProducts)
-	r.HandleFunc("PUT /api/add-favourite-product/{id}", a.addFavouriteProduct)
-	r.HandleFunc("DELETE /api/delete-favourite-product/{id}", a.deleteFavouriteProduct)
+	r.HandleFunc("/api/get-favoutires-products", a.GetFavouritesProducts).Methods("GET")
+	r.HandleFunc("/api/add-favourite-product/{id}", a.addFavouriteProduct).Methods("PUT")
+	r.HandleFunc("/api/delete-favourite-product/{id}", a.deleteFavouriteProduct).Methods("DELETE")
 
-	r.HandleFunc("PUT /api/add-order", a.AddOrder)
-	r.HandleFunc("DELETE /api/delete-order/{id}", a.DeleteOrder)
-	r.HandleFunc("GET /api/get-orders", a.GetOrders)
-	r.HandleFunc("PUT /api/change-order-status/{id}", a.ChangeOrderStatus)
-	r.HandleFunc("DELETE /api/archive-order/{id}", a.ArchiveOrder)
+	r.HandleFunc("/api/add-order", a.AddOrder).Methods("PUT")
+	r.HandleFunc("/api/delete-order/{id}", a.DeleteOrder).Methods("DELETE")
+	r.HandleFunc("/api/get-orders", a.GetOrders).Methods("GET")
+	r.HandleFunc("/api/change-order-status/{id}", a.ChangeOrderStatus).Methods("PUT")
+	r.HandleFunc("/api/archive-order/{id}", a.ArchiveOrder).Methods("DELETE")
 
-	r.HandleFunc("GET /api/get-archive-orders", a.GetArchiveOrders)
-	r.HandleFunc("DELETE /api/refresh-archive-order/{id}", a.RefreshArchiveOrder)
+	r.HandleFunc("/api/get-archive-orders", a.GetArchiveOrders).Methods("GET")
+	r.HandleFunc("/api/refresh-archive-order/{id}", a.RefreshArchiveOrder).Methods("DELETE")
 
-	r.HandleFunc("GET /api/get-cities", a.GetAllCities)
-	r.HandleFunc("GET /api/get-postals/{city_ref}", a.GetPostalsFromCity)
+	r.HandleFunc("/api/get-cities", a.GetAllCities).Methods("GET")
+	r.HandleFunc("/api/get-postals/{city_ref}", a.GetPostalsFromCity).Methods("GET")
 
-	r.HandleFunc("POST /api/login-admin-panel", a.loginAdminPanel)
-	r.HandleFunc("GET /api/check-admin-auth", a.checkAdminSession)
+	r.HandleFunc("/api/login-admin-panel", a.loginAdminPanel).Methods("POST")
+	r.HandleFunc("/api/check-admin-auth", a.checkAdminSession).Methods("GET")
 
-	return corsMiddleware(r)
-}
+	staticDir := "/app/static/frontend"
+	productsDir := "/app/static/products"
 
-func corsMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, Cookie")
-		w.Header().Set("Access-Control-Allow-Credentials", "true")
+	fileServerFrontend := http.FileServer(http.Dir(staticDir))
+	r.PathPrefix("/static/frontend/").Handler(http.StripPrefix("/static/frontend/", fileServerFrontend))
 
-		if r.Method == http.MethodOptions {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
+	fileServerProducts := http.FileServer(http.Dir(productsDir))
+	r.PathPrefix("/static/products/").Handler(http.StripPrefix("/static/products/", fileServerProducts))
 
-		next.ServeHTTP(w, r)
+	r.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, staticDir+"/index.html")
 	})
+
+	return r
 }

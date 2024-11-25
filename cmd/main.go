@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/ditacijsvitvidadoa/backend/internal/app"
-	cash2 "github.com/ditacijsvitvidadoa/backend/internal/cash"
+	"github.com/ditacijsvitvidadoa/backend/internal/cash"
 	"github.com/ditacijsvitvidadoa/backend/internal/mongo_conn"
 	"github.com/ditacijsvitvidadoa/backend/internal/ticker"
 	"log"
@@ -17,13 +17,13 @@ func main() {
 	if !ok {
 		port = "8080"
 	}
-	fmt.Println("port -> ", port)
+	fmt.Println("port ->", port)
 
-	cash, err := cash2.RedisConnection()
+	cache, err := cash.RedisConnection()
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer cash.Close()
+	defer cache.Close()
 
 	client, err := mongo_conn.MongoConnection()
 	if err != nil {
@@ -31,15 +31,14 @@ func main() {
 	}
 	defer client.Disconnect(context.Background())
 
-	a := app.NewApp(client, cash)
+	a := app.NewApp(client, cache)
 	router := a.GetRouter()
 
 	go ticker.GeneralTicker(client)
 
 	fmt.Println("Listening on port:", port)
-
 	err = http.ListenAndServe(fmt.Sprintf(":%s", port), router)
 	if err != nil {
-		fmt.Println(err)
+		log.Fatal("Error starting server:", err)
 	}
 }

@@ -2,7 +2,8 @@ services:
   server:
     container_name: server
     volumes:
-      - "D:/IT/DutyachiySvit/frontend/src/static/products:/app/static/products"
+      - "D:/IT/DutyachiySvit/backend/static/frontend:/app/static/frontend"
+      - "D:/IT/DutyachiySvit/backend/static/products:/app/static/products"
       - "D:/IT/DutyachiySvit/backend/internal/email_sender/template_html:/app/internal/email_sender/template_html"
     build:
       context: .
